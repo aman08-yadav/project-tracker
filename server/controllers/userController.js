@@ -1,49 +1,36 @@
 const User = require('../models/User');
-const prisma = require('../config/prisma');
+const Task = require('../models/Task');
+const FileMetadata = require('../models/FileMetadata');
+const ActivityLog = require('../models/ActivityLog');
 
 // ─── GET /api/v1/users/leaderboard ───────────────────────────
 const getLeaderboard = async (req, res, next) => {
   try {
-    // Fetch all analytics rows from PostgreSQL (Prisma)
-    const analyticsRows = await prisma.userAnalytics.findMany({
-      orderBy: [
-        { tasksCompleted: 'desc' },
-        { uploadsCount: 'desc' },
-      ],
-      take: 20,
-    });
-
-    if (analyticsRows.length === 0) {
-      return res.json({ success: true, leaderboard: [] });
-    }
-
-    // Get user names from MongoDB
-    const userIds = analyticsRows.map((r) => r.userId);
-    const users = await User.find({ _id: { $in: userIds } }).select('name email avatar role');
-    const userMap = {};
-    users.forEach((u) => { userMap[u._id.toString()] = u; });
-
-    const leaderboard = analyticsRows.map((row, idx) => {
-      const user = userMap[row.userId] || {};
-      const score =
-        (row.tasksCompleted * 10) +
-        (row.uploadsCount * 5) +
-        (row.activityCount * 1);
-
+    const users = await User.find({}).select('name email avatar role createdAt lastLogin');
+    
+    const leaderboardUnsorted = await Promise.all(users.map(async (user) => {
+      const tasksCompleted = await Task.countDocuments({ assignedTo: user._id, status: 'completed' });
+      const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: user._id });
+      const activityCount = await ActivityLog.countDocuments({ user: user._id });
+      
+      const score = (tasksCompleted * 10) + (uploadsCount * 5) + (activityCount * 1);
+      
       return {
-        rank: idx + 1,
-        userId: row.userId,
+        userId: user._id,
         name: user.name || 'Unknown',
         email: user.email || '',
         avatar: user.avatar || '',
         role: user.role || 'student',
-        tasksCompleted: row.tasksCompleted,
-        uploadsCount: row.uploadsCount,
-        activityCount: row.activityCount,
+        tasksCompleted,
+        uploadsCount,
+        activityCount,
         score,
-        lastActive: row.lastActive,
+        lastActive: user.lastLogin || user.createdAt,
       };
-    });
+    }));
+
+    leaderboardUnsorted.sort((a, b) => b.score - a.score);
+    const leaderboard = leaderboardUnsorted.slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }));
 
     res.json({ success: true, leaderboard });
   } catch (error) {
@@ -61,14 +48,12 @@ const getProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    let analytics = null;
-    try {
-      analytics = await prisma.userAnalytics.findUnique({ where: { userId: id } });
-    } catch (_) {}
+    const tasksCompleted = await Task.countDocuments({ assignedTo: id, status: 'completed' });
+    const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: id });
+    const activityCount = await ActivityLog.countDocuments({ user: id });
+    const score = (tasksCompleted * 10) + (uploadsCount * 5) + (activityCount * 1);
 
-    const score = analytics
-      ? (analytics.tasksCompleted * 10) + (analytics.uploadsCount * 5) + (analytics.activityCount * 1)
-      : 0;
+    const analytics = { tasksCompleted, uploadsCount, activityCount };
 
     res.json({
       success: true,
@@ -82,7 +67,7 @@ const getProfile = async (req, res, next) => {
         projects: user.projectIds,
         createdAt: user.createdAt,
       },
-      analytics: analytics || {},
+      analytics,
       score,
     });
   } catch (error) {

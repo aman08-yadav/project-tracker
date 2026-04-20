@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 const FileMetadata = require('../models/FileMetadata');
 const ActivityLog = require('../models/ActivityLog');
 const Project = require('../models/Project');
-const prisma = require('../config/prisma');
 
 const uploadFile = async (req, res, next) => {
   try {
@@ -42,18 +41,7 @@ const uploadFile = async (req, res, next) => {
       description: description || '',
     });
 
-    // Update analytics in PostgreSQL
-    await prisma.userAnalytics.upsert({
-      where: { userId: req.user._id.toString() },
-      update: { uploadsCount: { increment: 1 }, activityCount: { increment: 1 }, lastActive: new Date() },
-      create: { userId: req.user._id.toString(), uploadsCount: 1, activityCount: 1 },
-    });
-
-    await prisma.projectAnalytics.upsert({
-      where: { projectId },
-      update: { totalUploads: { increment: 1 } },
-      create: { projectId, totalUploads: 1 },
-    });
+    // Prisma analytics calls removed for MongoDB-only operation
 
     await ActivityLog.create({
       user: req.user._id, project: projectId, action: 'file_upload',

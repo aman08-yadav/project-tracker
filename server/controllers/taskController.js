@@ -2,7 +2,6 @@ const { validationResult } = require('express-validator');
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const ActivityLog = require('../models/ActivityLog');
-const prisma = require('../config/prisma');
 
 const createTask = async (req, res, next) => {
   try {
@@ -24,12 +23,7 @@ const createTask = async (req, res, next) => {
       dueDate: dueDate || null,
     });
 
-    // Update project analytics
-    await prisma.projectAnalytics.upsert({
-      where: { projectId },
-      update: { totalTasks: { increment: 1 }, pendingTasks: { increment: 1 } },
-      create: { projectId, totalTasks: 1, pendingTasks: 1 },
-    });
+
 
     await ActivityLog.create({
       user: req.user._id, project: projectId, action: 'task_created',
@@ -80,29 +74,8 @@ const updateTaskStatus = async (req, res, next) => {
     task.status = status;
     await task.save();
 
-    // Update Prisma analytics
-    const projectId = task.project.toString();
-    const updates = {};
-    if (oldStatus === 'pending') updates.pendingTasks = { decrement: 1 };
-    if (oldStatus === 'in-progress') updates.inProgressTasks = { decrement: 1 };
-    if (oldStatus === 'completed') updates.completedTasks = { decrement: 1 };
-    if (status === 'pending') updates.pendingTasks = { ...(updates.pendingTasks || {}), increment: 1 };
-    if (status === 'in-progress') updates.inProgressTasks = { increment: 1 };
-    if (status === 'completed') {
-      updates.completedTasks = { increment: 1 };
-      // Update user analytics
-      await prisma.userAnalytics.upsert({
-        where: { userId: req.user._id.toString() },
-        update: { tasksCompleted: { increment: 1 }, activityCount: { increment: 1 }, lastActive: new Date() },
-        create: { userId: req.user._id.toString(), tasksCompleted: 1, activityCount: 1 },
-      });
+      // Analytics update omitted for MongoDB-only version
     }
-
-    await prisma.projectAnalytics.upsert({
-      where: { projectId },
-      update: updates,
-      create: { projectId },
-    });
 
     const action = status === 'completed' ? 'task_completed' : 'task_updated';
     await ActivityLog.create({

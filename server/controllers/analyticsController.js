@@ -2,16 +2,21 @@ const ActivityLog = require('../models/ActivityLog');
 const User = require('../models/User');
 const Task = require('../models/Task');
 const FileMetadata = require('../models/FileMetadata');
-const prisma = require('../config/prisma');
 
 const getProjectAnalytics = async (req, res, next) => {
   try {
     const { id: projectId } = req.params;
 
-    const pgAnalytics = await prisma.projectAnalytics.findUnique({ where: { projectId } });
-
+    const totalTasks = await Task.countDocuments({ project: projectId });
+    const pendingTasks = await Task.countDocuments({ project: projectId, status: 'pending' });
+    const inProgressTasks = await Task.countDocuments({ project: projectId, status: 'in-progress' });
+    const completedTasks = await Task.countDocuments({ project: projectId, status: 'completed' });
+    
     // Per-member breakdown from MongoDB
     const members = await User.find({ projectIds: projectId }, 'name email role');
+    const memberCount = members.length;
+
+    const pgAnalytics = { totalTasks, pendingTasks, inProgressTasks, completedTasks, memberCount };
 
     const memberStats = await Promise.all(
       members.map(async (member) => {
@@ -51,13 +56,13 @@ const getUserAnalytics = async (req, res, next) => {
   try {
     const { id: userId } = req.params;
 
-    const pgAnalytics = await prisma.userAnalytics.findUnique({ where: { userId } });
-
     const uploads = await FileMetadata.countDocuments({ uploadedBy: userId });
     const tasksCompleted = await Task.countDocuments({ assignedTo: userId, status: 'completed' });
     const tasksInProgress = await Task.countDocuments({ assignedTo: userId, status: 'in-progress' });
     const tasksPending = await Task.countDocuments({ assignedTo: userId, status: 'pending' });
     const activityCount = await ActivityLog.countDocuments({ user: userId });
+
+    const pgAnalytics = { tasksCompleted, activityCount, lastActive: new Date() };
 
     const recentActivity = await ActivityLog.find({ user: userId })
       .populate('project', 'name')

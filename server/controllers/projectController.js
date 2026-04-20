@@ -2,9 +2,6 @@ const { validationResult } = require('express-validator');
 const Project = require('../models/Project');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
 
 const createProject = async (req, res, next) => {
   try {
@@ -24,13 +21,6 @@ const createProject = async (req, res, next) => {
 
     // Add project to user's list
     await User.findByIdAndUpdate(req.user._id, { $addToSet: { projectIds: project._id } });
-
-    // Create analytics row in PostgreSQL
-    await prisma.projectAnalytics.upsert({
-      where: { projectId: project._id.toString() },
-      update: { memberCount: 1 },
-      create: { projectId: project._id.toString(), memberCount: 1 },
-    });
 
     // Log activity
     await ActivityLog.create({ user: req.user._id, project: project._id, action: 'project_created', metadata: { name } });
@@ -140,13 +130,6 @@ const addMember = async (req, res, next) => {
     await project.save();
 
     await User.findByIdAndUpdate(userToAdd._id, { $addToSet: { projectIds: project._id } });
-
-    // Update analytics
-    await prisma.projectAnalytics.upsert({
-      where: { projectId: project._id.toString() },
-      update: { memberCount: project.members.length },
-      create: { projectId: project._id.toString(), memberCount: project.members.length },
-    });
 
     await ActivityLog.create({ user: req.user._id, project: project._id, action: 'member_added', metadata: { addedUser: userToAdd.name } });
 
