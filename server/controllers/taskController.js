@@ -74,8 +74,7 @@ const updateTaskStatus = async (req, res, next) => {
     task.status = status;
     await task.save();
 
-      // Analytics update omitted for MongoDB-only version
-    }
+    // Analytics update omitted for MongoDB-only version
 
     const action = status === 'completed' ? 'task_completed' : 'task_updated';
     await ActivityLog.create({
@@ -86,7 +85,7 @@ const updateTaskStatus = async (req, res, next) => {
     // Emit socket event
     const io = req.app.get('io');
     if (io) {
-      io.to(projectId).emit('task:updated', { task, updatedBy: req.user.name });
+      io.to(task.project.toString()).emit('task:updated', { task, updatedBy: req.user.name });
     }
 
     const populated = await Task.findById(task._id)
