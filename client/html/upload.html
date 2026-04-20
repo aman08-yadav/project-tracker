@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Files — ProjectHub</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/sidebar.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="app-layout">
+    <div class="main-content">
+      <div class="page-header animate-in">
+        <h1>File Manager</h1>
+        <p class="text-muted">Upload and manage project files</p>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-icon">📤</div>
+          <h3>Drag & Drop files here</h3>
+          <p>or click to browse — Max 10MB per file</p>
+          <input type="file" id="file-input" style="display:none" multiple>
+        </div>
+
+        <div id="upload-options" style="margin-top:20px;display:none;">
+          <div class="form-group">
+            <label>Select Project</label>
+            <select id="upload-project" class="form-control"></select>
+          </div>
+          <div id="file-queue" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+          <button class="btn btn-primary" id="upload-btn" style="width:100%;">
+            <span id="upload-btn-text">📤 Upload Files</span>
+            <span class="spinner" id="upload-spinner" style="display:none;"></span>
+          </button>
+        </div>
+
+        <div id="upload-progress" style="display:none;margin-top:16px;">
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Uploading…</span><span id="progress-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-bar-fill" style="width:0%;transition:width 0.3s;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File List -->
+      <div class="glass-card">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">Uploaded Files</h3>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="file-search" class="form-control" placeholder="Search files…">
+            </div>
+            <select id="file-project-filter" class="form-control" style="width:auto;min-width:160px;">
+              <option value="">All Projects</option>
+            </select>
+          </div>
+        </div>
+        <div id="files-list" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="skeleton" style="height:64px;"></div>
+          <div class="skeleton" style="height:64px;margin-top:8px;"></div>
+          <div class="skeleton" style="height:64px;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, formatBytes, timeAgo } from '../js/ui.js';
+
+    initToast();
+    const user = requireAuth(); if (!user) throw new Error();
+    buildSidebar('upload');
+    buildTopbar('Files');
+
+    let selectedFiles = [];
+    let projects = [];
+    let allFiles = [];
+
+    const fileIcons = {
+      pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
+      png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️',
+      mp4: '🎬', mp3: '🎵', zip: '🗜️', rar: '🗜️', js: '📜', ts: '📜',
+      html: '🌐', css: '🎨', json: '⚙️', default: '📎'
+    };
+
+    function getIcon(name) {
+      const ext = (name.split('.').pop() || '').toLowerCase();
+      return fileIcons[ext] || fileIcons.default;
+    }
+
+    // Load projects
+    async function loadProjects() {
+      try {
+        const res = await ApiClient.get('/projects');
+        projects = res.projects || [];
+        const sel = document.getElementById('upload-project');
+        const filter = document.getElementById('file-project-filter');
+        projects.forEach(p => {
+          sel.innerHTML += `<option value="${p._id}">${p.name}</option>`;
+          filter.innerHTML += `<option value="${p._id}">${p.name}</option>`;
+        });
+      } catch (_) {}
+    }
+
+    // Upload Zone
+    const zone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+
+    zone.addEventListener('click', () => fileInput.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault(); zone.classList.remove('dragover');
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+
+    function handleFiles(files) {
+      selectedFiles = files.filter(f => f.size <= 10 * 1024 * 1024);
+      if (selectedFiles.length === 0) { showToast('warning', 'Too large', 'Files must be under 10MB'); return; }
+      document.getElementById('upload-options').style.display = 'block';
+
+      const queue = document.getElementById('file-queue');
+      queue.innerHTML = selectedFiles.map((f, i) => `
+        <div class="file-card" style="animation-delay:${i * 0.05}s;">
+          <div class="file-icon">${getIcon(f.name)}</div>
+          <div class="file-info">
+            <div class="file-name">${f.name}</div>
+            <div class="file-meta">${formatBytes(f.size)}</div>
+          </div>
+          <button onclick="removeFile(${i})" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:1rem;">✕</button>
+        </div>
+      `).join('');
+    }
+
+    window.removeFile = (idx) => {
+      selectedFiles.splice(idx, 1);
+      if (selectedFiles.length === 0) document.getElementById('upload-options').style.display = 'none';
+      else handleFiles(selectedFiles);
+    };
+
+    document.getElementById('upload-btn').addEventListener('click', async () => {
+      const projectId = document.getElementById('upload-project').value;
+      if (!projectId) { showToast('warning', 'Select project', 'Please select a project'); return; }
+      if (selectedFiles.length === 0) { showToast('warning', 'No files', 'Add files first'); return; }
+
+      document.getElementById('upload-btn-text').style.display = 'none';
+      document.getElementById('upload-spinner').style.display = 'inline-block';
+      document.getElementById('upload-progress').style.display = 'block';
+
+      let done = 0;
+      for (const file of selectedFiles) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('projectId', projectId);
+        try {
+          await ApiClient.upload('/files/upload', fd);
+          done++;
+          const pct = Math.round((done / selectedFiles.length) * 100);
+          document.getElementById('progress-bar-fill').style.width = pct + '%';
+          document.getElementById('progress-pct').textContent = pct + '%';
+        } catch (err) {
+          showToast('error', 'Upload failed', file.name);
+        }
+      }
+
+      showToast('success', 'Upload complete', `${done} file(s) uploaded`);
+      selectedFiles = [];
+      document.getElementById('upload-options').style.display = 'none';
+      document.getElementById('upload-progress').style.display = 'none';
+      document.getElementById('upload-btn-text').style.display = 'inline';
+      document.getElementById('upload-spinner').style.display = 'none';
+      document.getElementById('progress-bar-fill').style.width = '0%';
+      fileInput.value = '';
+      loadFiles();
+    });
+
+    // Load files
+    async function loadFiles() {
+      const projFilter = document.getElementById('file-project-filter').value;
+      const search = document.getElementById('file-search').value.toLowerCase();
+      const list = document.getElementById('files-list');
+      try {
+        const url = projFilter ? `/files?projectId=${projFilter}` : '/files';
+        const res = await ApiClient.get(url);
+        allFiles = res.files || [];
+        const filtered = allFiles.filter(f =>
+          !search || f.originalName?.toLowerCase().includes(search) || f.filename?.toLowerCase().includes(search)
+        );
+        if (filtered.length === 0) {
+          list.innerHTML = `<div class="empty-state"><div class="icon">📎</div><h3>No files yet</h3><p>Upload project files to get started</p></div>`;
+          return;
+        }
+        list.innerHTML = filtered.map(f => `
+          <div class="file-card">
+            <div class="file-icon">${getIcon(f.originalName || f.filename || '')}</div>
+            <div class="file-info">
+              <div class="file-name">${f.originalName || f.filename}</div>
+              <div class="file-meta">
+                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · ${timeAgo(f.uploadedAt || f.createdAt)} · ${f.project?.name || ''}
+              </div>
+            </div>
+            <div class="file-size">${formatBytes(f.size)}</div>
+            <a href="/uploads/${f.filename}" target="_blank" class="btn btn-ghost btn-sm" download>⬇️</a>
+          </div>
+        `).join('');
+      } catch (_) {
+        list.innerHTML = `<p class="text-muted text-sm">Failed to load files.</p>`;
+      }
+    }
+
+    document.getElementById('file-search').addEventListener('input', loadFiles);
+    document.getElementById('file-project-filter').addEventListener('change', loadFiles);
+
+    loadProjects().then(loadFiles);
+  </script>
+</body>
+</html>

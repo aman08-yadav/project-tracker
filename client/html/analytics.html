@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics & Leaderboard — ProjectHub</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/sidebar.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="app-layout">
+    <div class="main-content">
+      <div class="page-header animate-in">
+        <h1>Leaderboard & Analytics</h1>
+        <p class="text-muted">Contribution scores, rankings, and activity</p>
+      </div>
+
+      <!-- Your Score Card -->
+      <div class="glass-card" style="margin-bottom:24px;background:var(--gradient-card);border-color:var(--border-glow);" id="my-score-card">
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+          <div style="font-size:3rem;">🏅</div>
+          <div style="flex:1;">
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:4px;">YOUR CONTRIBUTION SCORE</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:3rem;font-weight:700;" class="text-gradient" id="my-score">—</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);">Rank: <strong id="my-rank" style="color:var(--accent-light);">—</strong></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center;">
+            <div><div style="font-size:1.4rem;font-weight:700;color:var(--emerald);" id="my-completed">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Tasks Done</div></div>
+            <div><div style="font-size:1.4rem;font-weight:700;color:var(--cyan);" id="my-uploads">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Uploads</div></div>
+            <div><div style="font-size:1.4rem;font-weight:700;color:var(--accent-light);" id="my-activity">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Activities</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Podium -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;margin-bottom:24px;text-align:center;">🏆 Top Contributors</h3>
+        <div class="leaderboard-podium" id="podium">
+          <div class="skeleton" style="width:80px;height:140px;border-radius:var(--radius-md);"></div>
+          <div class="skeleton" style="width:80px;height:180px;border-radius:var(--radius-md);"></div>
+          <div class="skeleton" style="width:80px;height:120px;border-radius:var(--radius-md);"></div>
+        </div>
+      </div>
+
+      <!-- Full Leaderboard -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">Full Rankings</h3>
+          <div class="search-input-wrap" style="min-width:200px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="lb-search" class="form-control" placeholder="Search members…">
+          </div>
+        </div>
+        <div class="leaderboard-list" id="leaderboard-list">
+          <div class="skeleton" style="height:64px;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:64px;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:64px;"></div>
+        </div>
+      </div>
+
+      <!-- Activity Timeline -->
+      <div class="glass-card">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">Activity Timeline</h3>
+          <select id="activity-project" class="form-control" style="width:auto;min-width:180px;">
+            <option value="">All Projects</option>
+          </select>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:60px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, avatarInitials, animateCounter } from '../js/ui.js';
+
+    initToast();
+    const user = requireAuth(); if (!user) throw new Error();
+    buildSidebar('analytics');
+    buildTopbar('Leaderboard & Analytics');
+
+    let allLeaderboard = [];
+
+    const actionIcons = { task_created:'📝', task_updated:'🔄', task_completed:'✅', file_uploaded:'📎', project_created:'📁' };
+
+    function buildPodium(top3) {
+      const podiumEl = document.getElementById('podium');
+      if (top3.length === 0) { podiumEl.innerHTML = `<p class="text-muted text-sm">No data yet. Start completing tasks!</p>`; return; }
+
+      const [first, second, third] = [top3[0], top3[1], top3[2]];
+      const mkAvatar = (u, sz) => u?.avatar
+        ? `<img src="${u.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;">`
+        : `<span>${avatarInitials(u?.name)}</span>`;
+
+      podiumEl.innerHTML = `
+        ${second ? `
+        <div class="podium-item podium-2">
+          <div class="podium-avatar" style="width:52px;height:52px;">${mkAvatar(second,52)}</div>
+          <div class="podium-name">${second.name.split(' ')[0]}</div>
+          <div class="podium-score">${second.score} pts</div>
+          <div class="podium-base">2</div>
+        </div>` : ''}
+        ${first ? `
+        <div class="podium-item podium-1">
+          <div style="position:relative;">
+            <div class="podium-crown">👑</div>
+            <div class="podium-avatar">${mkAvatar(first,72)}</div>
+          </div>
+          <div class="podium-name">${first.name.split(' ')[0]}</div>
+          <div class="podium-score">${first.score} pts</div>
+          <div class="podium-base">1</div>
+        </div>` : ''}
+        ${third ? `
+        <div class="podium-item podium-3">
+          <div class="podium-avatar" style="width:48px;height:48px;">${mkAvatar(third,48)}</div>
+          <div class="podium-name">${third.name.split(' ')[0]}</div>
+          <div class="podium-score">${third.score} pts</div>
+          <div class="podium-base">3</div>
+        </div>` : ''}
+      `;
+    }
+
+    function renderLeaderboard(data) {
+      const list = document.getElementById('leaderboard-list');
+      if (data.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><h3>No rankings yet</h3><p>Complete tasks to appear here</p></div>`;
+        return;
+      }
+      list.innerHTML = data.map((u, i) => `
+        <div class="leaderboard-row">
+          <div class="leaderboard-rank ${i < 3 ? 'top3' : ''}">#${u.rank}</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;flex-shrink:0;overflow:hidden;">
+            ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;">` : avatarInitials(u.name)}
+          </div>
+          <div class="leaderboard-info">
+            <div class="leaderboard-name">${u.name} ${u.userId === user.id ? '<span style="font-size:0.7rem;color:var(--accent-light);">(You)</span>' : ''}</div>
+            <div class="leaderboard-stats">
+              <span>✅ ${u.tasksCompleted} tasks</span>
+              <span>📎 ${u.uploadsCount} uploads</span>
+              <span>⚡ ${u.activityCount} activities</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <div class="leaderboard-score">${u.score}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);">points</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadLeaderboard() {
+      try {
+        const res = await ApiClient.get('/users/leaderboard');
+        allLeaderboard = res.leaderboard || [];
+        buildPodium(allLeaderboard.slice(0, 3));
+        renderLeaderboard(allLeaderboard);
+
+        // My score
+        const mine = allLeaderboard.find(u => u.userId === user.id);
+        if (mine) {
+          document.getElementById('my-score').textContent = mine.score;
+          document.getElementById('my-rank').textContent = `#${mine.rank} of ${allLeaderboard.length}`;
+          animateCounter(document.getElementById('my-completed'), mine.tasksCompleted);
+          animateCounter(document.getElementById('my-uploads'), mine.uploadsCount);
+          animateCounter(document.getElementById('my-activity'), mine.activityCount);
+        } else {
+          document.getElementById('my-score').textContent = '0';
+          document.getElementById('my-rank').textContent = 'Not ranked yet';
+        }
+      } catch (err) {
+        showToast('error', 'Error', 'Failed to load leaderboard');
+      }
+    }
+
+    // Search filter
+    document.getElementById('lb-search').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = allLeaderboard.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+      renderLeaderboard(filtered);
+    });
+
+    // Activity Timeline
+    async function loadActivity(projectId = '') {
+      const timeline = document.getElementById('timeline');
+      try {
+        const url = `/analytics/activity?limit=15${projectId ? `&projectId=${projectId}` : ''}`;
+        const res = await ApiClient.get(url);
+        const logs = res.logs || [];
+        if (logs.length === 0) {
+          timeline.innerHTML = `<div class="empty-state"><div class="icon">⚡</div><h3>No activity yet</h3></div>`;
+          return;
+        }
+        timeline.innerHTML = logs.map(log => `
+          <div class="timeline-item">
+            <div class="timeline-dot">${actionIcons[log.action] || '⚡'}</div>
+            <div class="timeline-content">
+              <div class="timeline-action">
+                <strong>${log.user?.name || 'Someone'}</strong> ${log.action.replace(/_/g,' ')}
+                ${log.metadata?.title ? `— <em style="color:var(--accent-light);">${log.metadata.title}</em>` : ''}
+              </div>
+              <div class="timeline-meta">
+                <span>📁 ${log.project?.name || 'Unknown'}</span>
+                <span class="timeline-time">${timeAgo(log.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (_) {
+        timeline.innerHTML = `<p class="text-muted text-sm">Failed to load activity.</p>`;
+      }
+    }
+
+    // Load projects for filter
+    async function init() {
+      try {
+        const res = await ApiClient.get('/projects');
+        const sel = document.getElementById('activity-project');
+        (res.projects || []).forEach(p => { sel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
+        sel.addEventListener('change', () => loadActivity(sel.value));
+      } catch (_) {}
+    }
+
+    loadLeaderboard();
+    loadActivity();
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — ProjectHub</title>
+  <meta name="description" content="Sign in to ProjectHub — the ultimate team contribution tracker for students and faculty.">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    body::before { display: none; }
+    body { background: var(--bg-primary); }
+
+    .auth-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%; max-width: 960px;
+      min-height: 600px;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Brand Side ── */
+    .auth-brand {
+      background: linear-gradient(135deg, #1a0533 0%, #0c1a3d 50%, #071825 100%);
+      padding: 50px 40px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .auth-brand::before {
+      content: '';
+      position: absolute; top: -100px; right: -100px;
+      width: 350px; height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,58,237,0.35) 0%, transparent 70%);
+    }
+    .auth-brand::after {
+      content: '';
+      position: absolute; bottom: -80px; left: -80px;
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%);
+    }
+    .brand-logo-area { position: relative; z-index: 1; }
+    .brand-logo {
+      width: 56px; height: 56px;
+      background: var(--gradient-brand);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+    .brand-title { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; }
+    .brand-sub { color: var(--text-secondary); margin-top: 8px; font-size: 0.95rem; line-height: 1.6; }
+    .brand-features { position: relative; z-index: 1; }
+    .brand-feature {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      color: var(--text-secondary); font-size: 0.88rem;
+    }
+    .brand-feature:last-child { border: none; }
+    .brand-feature-icon { font-size: 1.2rem; }
+
+    /* ── Form Side ── */
+    .auth-form-side {
+      background: var(--bg-secondary);
+      padding: 48px 44px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .auth-form-side h2 { font-size: 1.6rem; margin-bottom: 6px; }
+    .auth-form-side .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 32px; }
+
+    /* ── Social Buttons ── */
+    .social-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .social-btn {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-primary);
+      font-size: 0.9rem; font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+    .social-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+    .social-btn svg { width: 20px; height: 20px; }
+    .social-btn.google-btn:hover { border-color: #4285f4; background: rgba(66,133,244,0.08); }
+    .social-btn.github-btn:hover { border-color: #6e40c9; background: rgba(110,64,201,0.08); }
+
+    .divider-or {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--text-muted); font-size: 0.82rem; margin-bottom: 24px;
+    }
+    .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Demo buttons ── */
+    .demo-btns { display: flex; gap: 8px; margin-top: 20px; }
+    .demo-btn {
+      flex: 1; padding: 9px;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      background: transparent;
+      color: var(--text-muted); font-size: 0.78rem; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .demo-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+
+    /* ── Error/Success ── */
+    .auth-alert {
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .auth-alert.error   { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: #fb7185; }
+    .auth-alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+
+    /* ── Password Toggle ── */
+    .input-wrap { position: relative; }
+    .pw-toggle {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;
+    }
+    .pw-toggle:hover { color: var(--text-primary); }
+
+
+  </style>
+</head>
+<body>
+  <div class="auth-container animate-in">
+    <!-- Brand Side -->
+    <div class="auth-brand">
+      <div class="brand-logo-area">
+        <div class="brand-logo">🚀</div>
+        <div class="brand-title">ProjectHub</div>
+        <div class="brand-sub">Your team's contribution tracking<br>powerhouse — built for excellence.</div>
+      </div>
+      <div class="brand-features">
+        <div class="brand-feature"><span class="brand-feature-icon">📊</span> Real-time analytics &amp; leaderboard</div>
+        <div class="brand-feature"><span class="brand-feature-icon">🔥</span> Live task updates via Socket.IO</div>
+        <div class="brand-feature"><span class="brand-feature-icon">💬</span> Project team chat</div>
+        <div class="brand-feature"><span class="brand-feature-icon">🏆</span> Contribution scoring system</div>
+      </div>
+    </div>
+
+    <!-- Form Side -->
+    <div class="auth-form-side">
+      <h2>Welcome back 👋</h2>
+      <p class="subtitle">Sign in to continue to ProjectHub</p>
+
+      <div id="auth-alert" class="auth-alert"></div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="pw-toggle" id="pw-toggle" title="Toggle password">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="submit-btn">
+          <span id="btn-text">Sign In</span>
+          <span id="btn-spinner" class="spinner" style="display:none"></span>
+        </button>
+      </form>
+
+      <div class="demo-btns">
+        <button class="demo-btn" id="demo-faculty">🎓 Demo: Faculty Login</button>
+        <button class="demo-btn" id="demo-student">🧑‍💻 Demo: Student Login</button>
+      </div>
+
+      <p style="text-align:center; margin-top:20px; font-size:0.88rem; color:var(--text-muted)">
+        New here? <a href="signup.html" style="color:var(--accent-light);font-weight:600">Create an account →</a>
+      </p>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { showToast, initToast } from '../js/ui.js';
+
+    initToast();
+
+    // Redirect if already logged in
+    if (localStorage.getItem('token')) {
+      window.location.href = 'dashboard.html';
+    }
+
+    // Check for OAuth error
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error')) {
+      const alert = document.getElementById('auth-alert');
+      alert.textContent = 'Social login failed. Please try again or use email/password.';
+      alert.className = 'auth-alert error';
+      alert.style.display = 'block';
+    }
+
+    // Password toggle
+    document.getElementById('pw-toggle').addEventListener('click', () => {
+      const pw = document.getElementById('password');
+      const btn = document.getElementById('pw-toggle');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+      btn.textContent = pw.type === 'password' ? '👁' : '🙈';
+    });
+
+    // Login form
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const alert = document.getElementById('auth-alert');
+      const btnText = document.getElementById('btn-text');
+      const spinner = document.getElementById('btn-spinner');
+
+      alert.style.display = 'none';
+      btnText.style.display = 'none';
+      spinner.style.display = 'inline-block';
+
+      try {
+        const res = await ApiClient.post('/auth/login', { email, password });
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user));
+        showToast('success', 'Welcome back!', `Hello, ${res.user.name}`);
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+      } catch (err) {
+        alert.textContent = err.message || 'Login failed. Please try again.';
+        alert.className = 'auth-alert error';
+        alert.style.display = 'block';
+        btnText.style.display = 'inline';
+        spinner.style.display = 'none';
+      }
+    });
+
+    // Demo logins
+    document.getElementById('demo-faculty').addEventListener('click', async () => {
+      document.getElementById('email').value = 'faculty@demo.com';
+      document.getElementById('password').value = 'demo1234';
+      document.getElementById('login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+    document.getElementById('demo-student').addEventListener('click', async () => {
+      document.getElementById('email').value = 'student@demo.com';
+      document.getElementById('password').value = 'demo1234';
+      document.getElementById('login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+  </script>
+</body>
+</html>

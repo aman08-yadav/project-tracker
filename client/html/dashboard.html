@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — ProjectHub</title>
+  <meta name="description" content="ProjectHub dashboard — view your stats, activity, and recent tasks.">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/sidebar.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <!-- Sidebar & Topbar injected by JS -->
+  <div class="app-layout">
+    <div class="main-content" id="main-content">
+
+      <!-- Page Header -->
+      <div class="page-header animate-in">
+        <h1>Dashboard</h1>
+        <p class="text-muted" id="greeting">Welcome back!</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card violet">
+          <div class="stat-icon">📁</div>
+          <div class="stat-value" id="stat-projects">—</div>
+          <div class="stat-label">My Projects</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="stat-tasks">—</div>
+          <div class="stat-label">Tasks Completed</div>
+        </div>
+        <div class="stat-card emerald">
+          <div class="stat-icon">📎</div>
+          <div class="stat-value" id="stat-uploads">—</div>
+          <div class="stat-label">Files Uploaded</div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-value" id="stat-score">—</div>
+          <div class="stat-label">Contribution Score</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:24px; margin-bottom:24px;">
+        <!-- Task Completion Donut -->
+        <div class="glass-card">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">Task Overview</h3>
+            <span class="text-muted text-sm" id="task-total-label">Loading…</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:32px;">
+            <div class="donut-chart" id="donut-wrap">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="16"/>
+                <circle id="donut-completed" cx="80" cy="80" r="60" fill="none" stroke="#7c3aed" stroke-width="16"
+                  stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;"/>
+                <circle id="donut-inprogress" cx="80" cy="80" r="60" fill="none" stroke="#06b6d4" stroke-width="16"
+                  stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease 0.2s;"/>
+              </svg>
+              <div class="donut-center">
+                <div class="donut-value" id="donut-pct">0%</div>
+                <div class="donut-label">Done</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:#7c3aed;"></div>
+                <span class="text-sm"><span id="cnt-completed">0</span> Completed</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:#06b6d4;"></div>
+                <span class="text-sm"><span id="cnt-inprogress">0</span> In Progress</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.1);"></div>
+                <span class="text-sm"><span id="cnt-pending">0</span> Pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-card">
+          <h3 style="font-size:1rem; margin-bottom:20px;">Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">
+              📁 <span>View My Projects</span>
+            </a>
+            <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">
+              ➕ <span>Create New Task</span>
+            </a>
+            <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;">
+              📤 <span>Upload File</span>
+            </a>
+            <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">
+              🏆 <span>View Leaderboard</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">Recent Activity</h3>
+          <a href="analytics.html" class="btn btn-ghost btn-sm">View all →</a>
+        </div>
+        <div class="timeline" id="activity-timeline">
+          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:60px;"></div>
+        </div>
+      </div>
+
+      <!-- My Tasks Preview -->
+      <div class="glass-card">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">My Recent Tasks</h3>
+          <a href="tasks.html" class="btn btn-ghost btn-sm">View all →</a>
+        </div>
+        <div id="my-tasks-list" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="skeleton" style="height:70px;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:70px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, animateCounter } from '../js/ui.js';
+
+    initToast();
+    const user = requireAuth();
+    if (!user) throw new Error('Not authenticated');
+
+    buildSidebar('dashboard');
+    buildTopbar('Dashboard');
+
+    // Greeting
+    const hr = new Date().getHours();
+    const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting').textContent = `${greet}, ${user.name}! 👋`;
+
+    // Action icons for timeline
+    const actionIcons = {
+      task_created: '📝', task_updated: '🔄', task_completed: '✅',
+      file_uploaded: '📎', member_added: '👤', project_created: '📁', default: '⚡'
+    };
+    const actionLabels = {
+      task_created: 'created a task', task_updated: 'updated a task', task_completed: 'completed a task',
+      file_uploaded: 'uploaded a file', member_added: 'added a member', project_created: 'created a project'
+    };
+
+    async function loadDashboard() {
+      try {
+        // Load analytics
+        const analyticsRes = await ApiClient.get(`/analytics/user/${user.id}`);
+        const a = analyticsRes.analytics || {};
+        const score = (a.tasksCompleted || 0) * 10 + (a.uploadsCount || 0) * 5 + (a.activityCount || 0);
+
+        animateCounter(document.getElementById('stat-projects'), user.projectIds?.length || 0);
+        animateCounter(document.getElementById('stat-tasks'), a.tasksCompleted || 0);
+        animateCounter(document.getElementById('stat-uploads'), a.uploadsCount || 0);
+        animateCounter(document.getElementById('stat-score'), score);
+
+        // Donut chart
+        const total = (a.tasksCompleted || 0) + (a.tasksInProgress || 0) + (a.tasksPending || 0);
+        document.getElementById('task-total-label').textContent = `${total} total tasks`;
+        document.getElementById('cnt-completed').textContent = a.tasksCompleted || 0;
+        document.getElementById('cnt-inprogress').textContent = a.tasksInProgress || 0;
+        document.getElementById('cnt-pending').textContent = a.tasksPending || 0;
+
+        const circ = 2 * Math.PI * 60; // 377
+        const pct = total > 0 ? (a.tasksCompleted || 0) / total : 0;
+        const ipPct = total > 0 ? (a.tasksInProgress || 0) / total : 0;
+
+        setTimeout(() => {
+          document.getElementById('donut-completed').style.strokeDashoffset = circ * (1 - pct);
+          document.getElementById('donut-inprogress').style.strokeDashoffset = circ * (1 - ipPct);
+          document.getElementById('donut-pct').textContent = Math.round(pct * 100) + '%';
+        }, 100);
+      } catch (_) {}
+
+      // Activity Timeline
+      try {
+        const actRes = await ApiClient.get(`/analytics/activity?limit=6`);
+        const logs = actRes.logs || [];
+        const timelineEl = document.getElementById('activity-timeline');
+        if (logs.length === 0) {
+          timelineEl.innerHTML = `<div class="empty-state"><div class="icon">⚡</div><h3>No activity yet</h3><p>Start working on tasks to see activity here</p></div>`;
+        } else {
+          timelineEl.innerHTML = logs.map(log => `
+            <div class="timeline-item">
+              <div class="timeline-dot">${actionIcons[log.action] || actionIcons.default}</div>
+              <div class="timeline-content">
+                <div class="timeline-action">
+                  <strong>${log.user?.name || 'Someone'}</strong> ${actionLabels[log.action] || log.action}
+                  ${log.metadata?.title ? `— <em>${log.metadata.title}</em>` : ''}
+                </div>
+                <div class="timeline-meta">
+                  <span>${log.project?.name || 'Unknown Project'}</span>
+                  <span class="timeline-time">${timeAgo(log.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (_) {
+        document.getElementById('activity-timeline').innerHTML = `<p class="text-muted text-sm">Failed to load activity.</p>`;
+      }
+
+      // My Tasks
+      try {
+        const taskRes = await ApiClient.get(`/tasks?assignedTo=${user.id}&limit=4`);
+        const tasks = taskRes.tasks || [];
+        const tasksEl = document.getElementById('my-tasks-list');
+        if (tasks.length === 0) {
+          tasksEl.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No tasks assigned</h3><p>You're all caught up!</p></div>`;
+        } else {
+          tasksEl.innerHTML = tasks.slice(0,4).map(t => `
+            <div class="task-card" onclick="window.location.href='tasks.html'">
+              <div class="flex-between">
+                <div class="task-title">${t.title}</div>
+                <span class="badge badge-${t.priority}">${t.priority}</span>
+              </div>
+              <div class="task-desc">${t.description || 'No description'}</div>
+              <div class="task-meta">
+                <span class="badge badge-${t.status}">${t.status}</span>
+                ${t.dueDate ? `<span class="task-deadline">${new Date(t.dueDate) < new Date() ? '🔴' : '📅'} ${new Date(t.dueDate).toLocaleDateString()}</span>` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (_) {
+        document.getElementById('my-tasks-list').innerHTML = `<p class="text-muted text-sm">Failed to load tasks.</p>`;
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

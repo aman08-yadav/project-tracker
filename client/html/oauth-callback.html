@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Callback — ProjectHub</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .callback-card { text-align:center; max-width:360px; padding:40px; }
+    .callback-card .spinner { width:48px; height:48px; border-width:4px; margin:0 auto 24px; }
+    .callback-card h3 { font-size:1.2rem; margin-bottom:8px; }
+    .callback-card p  { color:var(--text-secondary); font-size:0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="glass-card callback-card animate-in">
+    <div class="spinner"></div>
+    <h3>Signing you in…</h3>
+    <p>Please wait while we complete your social login.</p>
+  </div>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const userStr = params.get('user');
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(decodeURIComponent(userStr));
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          window.location.href = 'dashboard.html';
+        } catch(e) {
+          window.location.href = 'login.html?error=parse_failed';
+        }
+      } else {
+        window.location.href = 'login.html?error=oauth_failed';
+      }
+    })();
+  </script>
+</body>
+</html>

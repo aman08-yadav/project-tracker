@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasks — ProjectHub</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/sidebar.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="app-layout">
+    <div class="main-content">
+      <div class="page-header animate-in flex-between">
+        <div>
+          <h1>Tasks</h1>
+          <p class="text-muted">Manage and track all project tasks</p>
+        </div>
+        <button class="btn btn-primary" id="new-task-btn">➕ New Task</button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="form-control" placeholder="Search tasks…">
+        </div>
+        <select id="filter-status" class="form-control" style="width:auto;min-width:140px;">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+        <select id="filter-priority" class="form-control" style="width:auto;min-width:140px;">
+          <option value="">All Priority</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select id="filter-project" class="form-control" style="width:auto;min-width:160px;">
+          <option value="">All Projects</option>
+        </select>
+      </div>
+
+      <!-- Kanban Board -->
+      <div class="kanban-board" id="kanban-board">
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span style="color:#94a3b8;">⬜</span> Pending
+              <div class="kanban-count" id="cnt-pending">0</div>
+            </div>
+          </div>
+          <div class="kanban-cards" id="col-pending" data-status="pending"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span style="color:#22d3ee;">🔄</span> In Progress
+              <div class="kanban-count" id="cnt-inprogress">0</div>
+            </div>
+          </div>
+          <div class="kanban-cards" id="col-in-progress" data-status="in-progress"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-col-title">
+              <span style="color:#34d399;">✅</span> Completed
+              <div class="kanban-count" id="cnt-completed">0</div>
+            </div>
+          </div>
+          <div class="kanban-cards" id="col-completed" data-status="completed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Task Modal Template -->
+  <template id="task-modal-tpl">
+    <div class="modal-header">
+      <h3>Create New Task</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <form id="task-form">
+      <div class="form-group">
+        <label>Project *</label>
+        <select id="task-project" class="form-control" required></select>
+      </div>
+      <div class="form-group">
+        <label>Task Title *</label>
+        <input type="text" id="task-title" class="form-control" placeholder="Enter task title" required>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="task-desc" class="form-control" rows="3" placeholder="Optional description…" style="resize:vertical;"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="task-priority" class="form-control">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="date" id="task-due" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Assign To</label>
+        <select id="task-assignee" class="form-control">
+          <option value="">Unassigned</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">
+        <span id="task-btn-text">Create Task</span>
+        <span class="spinner" id="task-spinner" style="display:none"></span>
+      </button>
+    </form>
+  </template>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, openModal, timeAgo, formatDate } from '../js/ui.js';
+
+    initToast();
+    const user = requireAuth(); if (!user) throw new Error();
+    buildSidebar('tasks');
+    buildTopbar('Tasks');
+
+    let allTasks = [];
+    let projects = [];
+
+    async function loadProjects() {
+      try {
+        const res = await ApiClient.get('/projects');
+        projects = res.projects || [];
+      } catch (_) {}
+    }
+
+    function renderKanban(tasks) {
+      const cols = { 'pending': [], 'in-progress': [], 'completed': [] };
+      tasks.forEach(t => { if (cols[t.status]) cols[t.status].push(t); });
+
+      Object.entries(cols).forEach(([status, tasks]) => {
+        const col = document.getElementById(`col-${status}`);
+        const cnt = document.getElementById(`cnt-${status === 'in-progress' ? 'inprogress' : status}`);
+        if (cnt) cnt.textContent = tasks.length;
+        if (!col) return;
+
+        if (tasks.length === 0) {
+          col.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:0.82rem;">Drop tasks here</div>`;
+          return;
+        }
+
+        col.innerHTML = tasks.map(t => {
+          const due = t.dueDate ? new Date(t.dueDate) : null;
+          const overdue = due && due < new Date() && t.status !== 'completed';
+          return `
+            <div class="kanban-card" data-id="${t._id}" draggable="true">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <div style="font-size:0.9rem;font-weight:600;flex:1;">${t.title}</div>
+                <span class="badge badge-${t.priority}">${t.priority}</span>
+              </div>
+              ${t.description ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;line-height:1.4;">${t.description.slice(0,80)}${t.description.length>80?'…':''}</div>` : ''}
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                ${t.assignedTo ? `<span style="font-size:0.72rem;color:var(--text-muted);">👤 ${t.assignedTo.name}</span>` : '<span></span>'}
+                ${due ? `<span class="task-deadline ${overdue?'overdue':''}">${overdue?'🔴 ':'📅 '}${due.toLocaleDateString()}</span>` : ''}
+              </div>
+              <div style="display:flex;gap:6px;margin-top:10px;">
+                ${status !== 'in-progress' && status !== 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="changeStatus('${t._id}','in-progress')" style="font-size:0.72rem;padding:4px 8px;">→ In Progress</button>` : ''}
+                ${status !== 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="changeStatus('${t._id}','completed')" style="font-size:0.72rem;padding:4px 8px;color:var(--emerald);">✓ Complete</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      });
+    }
+
+    function filterAndRender() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const status = document.getElementById('filter-status').value;
+      const priority = document.getElementById('filter-priority').value;
+      const projId = document.getElementById('filter-project').value;
+
+      const filtered = allTasks.filter(t =>
+        (!search || t.title.toLowerCase().includes(search) || (t.description||'').toLowerCase().includes(search)) &&
+        (!status || t.status === status) &&
+        (!priority || t.priority === priority) &&
+        (!projId || (t.project?._id || t.project) === projId)
+      );
+      renderKanban(filtered);
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await ApiClient.get('/tasks');
+        allTasks = res.tasks || [];
+        filterAndRender();
+      } catch (err) {
+        showToast('error', 'Error', 'Failed to load tasks');
+      }
+    }
+
+    window.changeStatus = async (taskId, newStatus) => {
+      try {
+        await ApiClient.patch(`/tasks/${taskId}/status`, { status: newStatus });
+        const t = allTasks.find(t => t._id === taskId);
+        if (t) t.status = newStatus;
+        filterAndRender();
+        showToast('success', 'Updated', `Task moved to ${newStatus}`);
+      } catch (err) {
+        showToast('error', 'Error', err.message);
+      }
+    };
+
+    // New Task Modal
+    document.getElementById('new-task-btn').addEventListener('click', () => {
+      const tpl = document.getElementById('task-modal-tpl').content.cloneNode(true);
+      const div = document.createElement('div');
+      div.appendChild(tpl);
+      const overlay = openModal(div.innerHTML);
+
+      // Populate project select
+      const projSel = overlay.querySelector('#task-project');
+      projects.forEach(p => { projSel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
+
+      // Populate assignee select (load members)
+      projSel.addEventListener('change', async () => {
+        const sel = overlay.querySelector('#task-assignee');
+        sel.innerHTML = '<option value="">Unassigned</option>';
+        if (!projSel.value) return;
+        try {
+          const res = await ApiClient.get(`/projects/${projSel.value}`);
+          (res.project?.members || []).forEach(m => {
+            sel.innerHTML += `<option value="${m._id}">${m.name}</option>`;
+          });
+        } catch (_) {}
+      });
+
+      overlay.querySelector('#task-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnText = overlay.querySelector('#task-btn-text');
+        const spinner = overlay.querySelector('#task-spinner');
+        btnText.style.display = 'none'; spinner.style.display = 'inline-block';
+        try {
+          await ApiClient.post('/tasks', {
+            title: overlay.querySelector('#task-title').value,
+            description: overlay.querySelector('#task-desc').value,
+            projectId: overlay.querySelector('#task-project').value,
+            priority: overlay.querySelector('#task-priority').value,
+            dueDate: overlay.querySelector('#task-due').value || null,
+            assignedTo: overlay.querySelector('#task-assignee').value || null,
+          });
+          showToast('success', 'Task Created', 'New task added to board');
+          overlay.remove();
+          loadTasks();
+        } catch (err) {
+          showToast('error', 'Error', err.message);
+          btnText.style.display = 'inline'; spinner.style.display = 'none';
+        }
+      });
+    });
+
+    // Filters
+    ['search-input','filter-status','filter-priority','filter-project'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', filterAndRender);
+      document.getElementById(id)?.addEventListener('change', filterAndRender);
+    });
+
+    // Populate project filter
+    async function init() {
+      await loadProjects();
+      const sel = document.getElementById('filter-project');
+      projects.forEach(p => { sel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
+      loadTasks();
+    }
+    init();
+  </script>
+</body>
+</html>

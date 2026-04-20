@@ -1,0 +1,158 @@
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+const FileMetadata = require('../models/FileMetadata');
+const ActivityLog = require('../models/ActivityLog');
+const Project = require('../models/Project');
+const prisma = require('../config/prisma');
+
+const uploadFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+
+    const { projectId, description } = req.body;
+    if (!projectId) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false, message: 'projectId is required.' });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    // Check membership
+    const isMember = project.members.some(m => m.user.toString() === req.user._id.toString());
+    if (!isMember && req.user.role !== 'faculty') {
+      fs.unlinkSync(req.file.path);
+      return res.status(403).json({ success: false, message: 'You are not a member of this project.' });
+    }
+
+    const fileMeta = await FileMetadata.create({
+      originalName: req.file.originalname,
+      storedName: req.file.filename,
+      filePath: req.file.path,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      uploadedBy: req.user._id,
+      project: projectId,
+      description: description || '',
+    });
+
+    // Update analytics in PostgreSQL
+    await prisma.userAnalytics.upsert({
+      where: { userId: req.user._id.toString() },
+      update: { uploadsCount: { increment: 1 }, activityCount: { increment: 1 }, lastActive: new Date() },
+      create: { userId: req.user._id.toString(), uploadsCount: 1, activityCount: 1 },
+    });
+
+    await prisma.projectAnalytics.upsert({
+      where: { projectId },
+      update: { totalUploads: { increment: 1 } },
+      create: { projectId, totalUploads: 1 },
+    });
+
+    await ActivityLog.create({
+      user: req.user._id, project: projectId, action: 'file_upload',
+      metadata: { fileId: fileMeta._id, originalName: req.file.originalname, size: req.file.size },
+    });
+
+    // Notify project room via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(projectId).emit('file:uploaded', {
+        file: { id: fileMeta._id, originalName: req.file.originalname, uploadedBy: req.user.name },
+      });
+    }
+
+    res.status(201).json({ success: true, file: fileMeta });
+  } catch (error) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    next(error);
+  }
+};
+
+const getProjectFiles = async (req, res, next) => {
+  try {
+    const files = await FileMetadata.find({ project: req.params.id })
+      .populate('uploadedBy', 'name email')
+      .populate('project', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, files });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getFiles = async (req, res, next) => {
+  try {
+    const filter = {};
+    if (req.query.projectId) filter.project = req.query.projectId;
+    
+    // If not faculty, maybe restrict to files of projects the user is in. 
+    // For now, let's keep it simple or restrict to user's projects.
+    if (req.user.role !== 'faculty') {
+      filter.project = { $in: req.user.projectIds };
+      if (req.query.projectId) {
+        if (!req.user.projectIds.map(id => id.toString()).includes(req.query.projectId)) {
+           return res.json({ success: true, files: [] });
+        }
+        filter.project = req.query.projectId;
+      }
+    }
+
+    const files = await FileMetadata.find(filter)
+      .populate('uploadedBy', 'name email')
+      .populate('project', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, files });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteFile = async (req, res, next) => {
+  try {
+    const file = await FileMetadata.findById(req.params.id);
+    if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
+
+    if (file.uploadedBy.toString() !== req.user._id.toString() && req.user.role !== 'faculty') {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this file.' });
+    }
+
+    // Delete from disk using fs
+    if (fs.existsSync(file.filePath)) {
+      fs.unlinkSync(file.filePath);
+    }
+
+    await ActivityLog.create({
+      user: req.user._id, project: file.project, action: 'file_delete',
+      metadata: { originalName: file.originalName },
+    });
+
+    await file.deleteOne();
+    res.json({ success: true, message: 'File deleted.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const downloadFile = async (req, res, next) => {
+  try {
+    const file = await FileMetadata.findById(req.params.id);
+    if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
+    if (!fs.existsSync(file.filePath)) {
+      return res.status(404).json({ success: false, message: 'File not found on disk.' });
+    }
+    res.download(file.filePath, file.originalName);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { uploadFile, getProjectFiles, getFiles, deleteFile, downloadFile };

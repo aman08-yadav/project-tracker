@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects — ProjectHub</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/sidebar.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="app-layout">
+    <div class="main-content">
+      <div class="page-header animate-in flex-between">
+        <div>
+          <h1>Projects</h1>
+          <p class="text-muted">Manage your teams and projects</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" id="join-btn">🔗 Join Project</button>
+          <button class="btn btn-primary" id="create-btn">➕ New Project</button>
+        </div>
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="grid-2" id="projects-grid">
+        <div class="skeleton" style="height:220px;border-radius:var(--radius-lg);"></div>
+        <div class="skeleton" style="height:220px;border-radius:var(--radius-lg);"></div>
+      </div>
+
+      <!-- Project Detail Panel (shown when project selected) -->
+      <div id="project-detail" style="display:none; margin-top:24px;">
+        <div class="glass-card" style="margin-bottom:20px;">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <div>
+              <h2 id="proj-name" style="font-size:1.4rem;"></h2>
+              <p id="proj-desc" class="text-muted text-sm" style="margin-top:4px;"></p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="close-detail">✕ Close</button>
+          </div>
+          <div class="grid-3" style="margin-bottom:20px;">
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--accent-light);" id="proj-stat-members">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Members</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--cyan);" id="proj-stat-tasks">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Total Tasks</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--emerald);" id="proj-stat-done">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Completed</div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Completion</span><span id="proj-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="proj-progress" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap:20px;">
+          <!-- Members -->
+          <div class="glass-card">
+            <div class="flex-between" style="margin-bottom:16px;">
+              <h3 style="font-size:1rem;">Team Members</h3>
+              <button class="btn btn-primary btn-sm" id="add-member-btn">➕ Add</button>
+            </div>
+            <div id="members-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+
+          <!-- Chat -->
+          <div class="chat-panel">
+            <div class="chat-header">
+              <div class="chat-online-dot"></div>
+              <span style="font-size:0.9rem;font-weight:600;">Project Chat</span>
+              <span id="online-count" style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;">— online</span>
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="typing-indicator" id="typing-indicator"></div>
+            <div class="chat-input-row">
+              <input type="text" id="chat-input" class="form-control" placeholder="Type a message…" style="flex:1;">
+              <button class="btn btn-primary btn-sm" id="send-msg-btn">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ApiClient } from '../js/api.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, openModal, avatarInitials, timeAgo } from '../js/ui.js';
+
+    initToast();
+    const user = requireAuth(); if (!user) throw new Error();
+    buildSidebar('projects');
+    buildTopbar('Projects');
+
+    let socket = null;
+    let currentProjectId = null;
+    let typingTimer = null;
+
+    // ── Load Projects ────────────────────────────────────────
+    async function loadProjects() {
+      const grid = document.getElementById('projects-grid');
+      try {
+        const res = await ApiClient.get('/projects');
+        const projects = res.projects || [];
+        if (projects.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;">
+              <div class="icon">📁</div>
+              <h3>No projects yet</h3>
+              <p>Create your first project or join an existing one</p>
+            </div>`;
+          return;
+        }
+        grid.innerHTML = projects.map(p => `
+          <div class="glass-card" style="cursor:pointer;" onclick="openProject('${p._id}')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+              <div style="font-size:2rem;">📁</div>
+              <span style="font-size:0.7rem;color:var(--text-muted);">${new Date(p.createdAt).toLocaleDateString()}</span>
+            </div>
+            <h3 style="font-size:1.05rem;margin-bottom:6px;">${p.name}</h3>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">${p.description || 'No description'}</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:-8px;">
+                ${(p.members || []).slice(0,4).map(m => `
+                  <div style="width:28px;height:28px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:white;border:2px solid var(--bg-secondary);margin-left:-6px;">${avatarInitials(m.name)}</div>
+                `).join('')}
+                ${p.members?.length > 4 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);margin-left:-6px;">+${p.members.length - 4}</div>` : ''}
+              </div>
+              <span style="font-size:0.78rem;color:var(--text-muted);">${p.members?.length || 0} members</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<p class="text-muted">Failed to load projects.</p>`;
+      }
+    }
+
+    // ── Open Project Detail ───────────────────────────────────
+    window.openProject = async (projectId) => {
+      currentProjectId = projectId;
+      document.getElementById('project-detail').style.display = 'block';
+      document.getElementById('project-detail').scrollIntoView({ behavior: 'smooth' });
+
+      try {
+        const res = await ApiClient.get(`/projects/${projectId}`);
+        const p = res.project;
+        document.getElementById('proj-name').textContent = p.name;
+        document.getElementById('proj-desc').textContent = p.description || '';
+        document.getElementById('proj-stat-members').textContent = p.members?.length || 0;
+
+        // Load task stats
+        try {
+          const ta = await ApiClient.get(`/analytics/project/${projectId}`);
+          const stats = ta.analytics || {};
+          const total = stats.totalTasks || 0;
+          const done  = stats.completedTasks || 0;
+          const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+          document.getElementById('proj-stat-tasks').textContent = total;
+          document.getElementById('proj-stat-done').textContent = done;
+          document.getElementById('proj-pct').textContent = `${pct}%`;
+          setTimeout(() => { document.getElementById('proj-progress').style.width = `${pct}%`; }, 100);
+        } catch (_) {}
+
+        // Members list
+        const ml = document.getElementById('members-list');
+        ml.innerHTML = (p.members || []).map(m => `
+          <div class="member-card">
+            <div class="member-avatar">${m.avatar ? `<img src="${m.avatar}" alt="">` : avatarInitials(m.name)}</div>
+            <div class="member-info">
+              <div class="member-name">${m.name}</div>
+              <div class="member-email">${m.email}</div>
+            </div>
+            <span class="badge badge-${m.role}">${m.role}</span>
+            ${p.createdBy === user.id && m._id !== user.id ? `
+              <button class="btn btn-danger btn-sm" onclick="removeMember('${projectId}','${m._id}')">✕</button>
+            ` : ''}
+          </div>
+        `).join('');
+      } catch (err) {
+        showToast('error', 'Error', 'Failed to load project details');
+      }
+
+      // Connect Socket.IO
+      initSocket(projectId);
+    };
+
+    // ── Socket.IO Chat ────────────────────────────────────────
+    function initSocket(projectId) {
+      if (socket) { socket.disconnect(); }
+      const script = document.createElement('script');
+      script.src = '/socket.io/socket.io.js';
+      script.onload = () => {
+        socket = io();
+        socket.emit('join:project', { projectId, userId: user.id, userName: user.name });
+
+        socket.on('chat:message', ({ message, user: sender, timestamp }) => {
+          appendMessage(sender, message, timestamp, sender.id === user.id);
+        });
+
+        socket.on('chat:typing', ({ userName, isTyping }) => {
+          const ind = document.getElementById('typing-indicator');
+          ind.textContent = isTyping ? `${userName} is typing…` : '';
+        });
+
+        socket.on('online:members', (members) => {
+          document.getElementById('online-count').textContent = `${members.length} online`;
+        });
+        socket.on('user:joined', ({ userName }) => showToast('info', 'User joined', `${userName} joined the project`));
+        socket.on('task:created', ({ task }) => showToast('info', '📝 New Task', `"${task.title}" was added`));
+        socket.on('task:updated', ({ task }) => showToast('info', '🔄 Task Updated', task.title));
+        socket.on('notification', ({ message }) => showToast('info', '🔔 Notification', message));
+      };
+      if (!document.querySelector('script[src="/socket.io/socket.io.js"]')) {
+        document.head.appendChild(script);
+      } else {
+        script.onload();
+      }
+    }
+
+    function appendMessage(sender, message, timestamp, isOwn) {
+      const msgs = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = `chat-message ${isOwn ? 'own' : ''}`;
+      div.innerHTML = `
+        <div class="chat-msg-avatar">${avatarInitials(sender.name)}</div>
+        <div class="chat-msg-body">
+          ${!isOwn ? `<div class="chat-msg-name">${sender.name}</div>` : ''}
+          <div class="chat-bubble">${escapeHTML(message)}</div>
+          <div class="chat-msg-time">${new Date(timestamp).toLocaleTimeString()}</div>
+        </div>
+      `;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Send message
+    document.getElementById('send-msg-btn').addEventListener('click', sendMessage);
+    document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    document.getElementById('chat-input').addEventListener('input', () => {
+      if (!socket || !currentProjectId) return;
+      socket.emit('chat:typing', { projectId: currentProjectId, userName: user.name, isTyping: true });
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => socket.emit('chat:typing', { projectId: currentProjectId, userName: user.name, isTyping: false }), 2000);
+    });
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg || !socket || !currentProjectId) return;
+      socket.emit('chat:message', { projectId: currentProjectId, message: msg, user: { id: user.id, name: user.name } });
+      appendMessage({ name: user.name, id: user.id }, msg, new Date(), true);
+      input.value = '';
+    }
+
+    // ── Remove Member ──────────────────────────────────────────
+    window.removeMember = async (projectId, memberId) => {
+      try {
+        await ApiClient.delete(`/projects/${projectId}/members/${memberId}`);
+        showToast('success', 'Removed', 'Member removed from project');
+        openProject(projectId);
+      } catch (err) { showToast('error', 'Error', err.message); }
+    };
+
+    // ── Add Member Modal ───────────────────────────────────────
+    document.getElementById('add-member-btn')?.addEventListener('click', async () => {
+      let usersHTML = '<option value="">Select user</option>';
+      try {
+        const res = await ApiClient.get('/users');
+        (res.users || []).forEach(u => { usersHTML += `<option value="${u._id}">${u.name} (${u.role})</option>`; });
+      } catch (_) {}
+
+      const overlay = openModal(`
+        <div class="modal-header"><h3>Add Member</h3><button class="modal-close">×</button></div>
+        <div class="form-group"><label>Select User</label><select id="member-select" class="form-control">${usersHTML}</select></div>
+        <button class="btn btn-primary" style="width:100%" id="add-member-submit">Add to Project</button>
+      `);
+      overlay.querySelector('#add-member-submit').addEventListener('click', async () => {
+        const memberId = overlay.querySelector('#member-select').value;
+        if (!memberId) return;
+        try {
+          await ApiClient.post(`/projects/${currentProjectId}/members`, { memberId });
+          showToast('success', 'Added', 'Member added to project');
+          overlay.remove();
+          openProject(currentProjectId);
+        } catch (err) { showToast('error', 'Error', err.message); }
+      });
+    });
+
+    // ── Create Project Modal ───────────────────────────────────
+    document.getElementById('create-btn').addEventListener('click', () => {
+      const overlay = openModal(`
+        <div class="modal-header"><h3>Create New Project</h3><button class="modal-close">×</button></div>
+        <div class="form-group"><label>Project Name *</label><input type="text" id="proj-name-inp" class="form-control" placeholder="My Awesome Project" required></div>
+        <div class="form-group"><label>Description</label><textarea id="proj-desc-inp" class="form-control" rows="3" placeholder="What is this project about?" style="resize:vertical;"></textarea></div>
+        <button class="btn btn-primary" style="width:100%" id="create-proj-submit">Create Project</button>
+      `);
+      overlay.querySelector('#create-proj-submit').addEventListener('click', async () => {
+        const name = overlay.querySelector('#proj-name-inp').value.trim();
+        const description = overlay.querySelector('#proj-desc-inp').value.trim();
+        if (!name) return showToast('warning', 'Required', 'Project name is required');
+        try {
+          await ApiClient.post('/projects', { name, description });
+          showToast('success', 'Created!', `Project "${name}" created`);
+          overlay.remove();
+          loadProjects();
+        } catch (err) { showToast('error', 'Error', err.message); }
+      });
+    });
+
+    // ── Join Project ───────────────────────────────────────────
+    document.getElementById('join-btn').addEventListener('click', () => {
+      const overlay = openModal(`
+        <div class="modal-header"><h3>Join a Project</h3><button class="modal-close">×</button></div>
+        <div class="form-group"><label>Project ID</label><input type="text" id="join-id" class="form-control" placeholder="Paste the Project ID here"></div>
+        <button class="btn btn-primary" style="width:100%" id="join-submit">Join Project</button>
+      `);
+      overlay.querySelector('#join-submit').addEventListener('click', async () => {
+        const projectId = overlay.querySelector('#join-id').value.trim();
+        if (!projectId) return;
+        try {
+          await ApiClient.post(`/projects/${projectId}/members`, { memberId: user.id });
+          showToast('success', 'Joined!', 'You joined the project');
+          overlay.remove();
+          loadProjects();
+        } catch (err) { showToast('error', 'Error', err.message); }
+      });
+    });
+
+    document.getElementById('close-detail').addEventListener('click', () => {
+      document.getElementById('project-detail').style.display = 'none';
+      if (socket) { socket.disconnect(); socket = null; }
+    });
+
+    loadProjects();
+  </script>
+</body>
+</html>
