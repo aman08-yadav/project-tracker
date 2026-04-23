@@ -333,7 +333,6 @@
       // Populate assignees when project changes
       const updateAssignees = async () => {
         const pId = pSelect.value;
-        if (!pId) { aSelect.innerHTML = '<option value="">Select Member</option>'; return; }
         try {
           if (user.role === 'faculty') {
             const res = await ApiClient.get('/users');
@@ -341,6 +340,7 @@
             aSelect.innerHTML = '<option value="">Select Member (All Students)</option>' + 
               allUsers.map(m => `<option value="${m._id}" ${task?.assignedTo?._id === m._id ? 'selected' : ''}>${m.name} (${m.role})</option>`).join('');
           } else {
+            if (!pId) { aSelect.innerHTML = '<option value="">Select Member</option>'; return; }
             const p = await ApiClient.get(`/projects/${pId}`);
             const members = p.project?.members || [];
             aSelect.innerHTML = '<option value="">Select Member</option>' + 
