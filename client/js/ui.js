@@ -142,7 +142,7 @@ export function buildTopbar(title = '') {
           🔔
           <span class="notif-badge" id="notif-badge" style="display:none">0</span>
         </button>
-        <div class="user-menu" title="Profile">
+        <div class="user-menu" title="Profile" id="mobile-profile-btn">
           <div class="user-avatar">${user?.avatar ? `<img src="${user.avatar}" alt="">` : avatarInitials(user?.name)}</div>
           <span style="font-size:0.9rem;font-weight:600;display:none;">${user?.name?.split(' ')[0] || 'User'}</span>
         </div>
@@ -176,6 +176,15 @@ export function buildTopbar(title = '') {
 
   // Setup Help Modal
   document.getElementById('help-btn')?.addEventListener('click', openHelpModal);
+
+  // Mobile Topbar Logout
+  document.getElementById('mobile-profile-btn')?.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      if (confirm('Do you want to log out?')) {
+        window.uiLogout();
+      }
+    }
+  });
 
   // Setup Global Shortcuts
   initKeyboardShortcuts();

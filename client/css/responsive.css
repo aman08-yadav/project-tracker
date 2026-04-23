@@ -14,31 +14,59 @@
 @media (max-width: 768px) {
   :root { --sidebar-width: 0px; }
 
+  /* Fix for mobile address bar cutting off 100vh */
   .sidebar {
     transform: translateX(-260px);
     width: 260px !important;
+    height: 100vh;
+    height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .sidebar.open {
     transform: translateX(0);
     box-shadow: 8px 0 40px rgba(0,0,0,0.6);
   }
-  .sidebar-overlay { display: block; }
-
+  
   .main-content {
     margin-left: 0 !important;
     padding: calc(var(--topbar-height) + 16px) 16px 32px;
   }
-  .topbar { left: 0; padding: 0 16px; }
+  
+  .topbar { 
+    left: 0; 
+    padding: 0 16px; 
+    width: 100%;
+  }
   .hamburger { display: flex; }
-
+  
+  /* Topbar mobile adjustments */
+  .topbar-right { gap: 6px; }
+  .help-btn span { display: none; } /* Hide the text "Help" and just show icon on mobile */
+  .user-menu { padding: 4px; }
+  
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .page-header.flex-between { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .page-header h1 { font-size: 1.6rem; }
+  
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .kanban-board { grid-template-columns: 1fr; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .leaderboard-podium { gap: 8px; }
+  .leaderboard-podium { gap: 8px; margin-top: 20px; }
+  
+  /* Make heatmap scrollable horizontally on mobile */
+  #heatmap-grid { 
+    overflow-x: auto; 
+    padding-bottom: 10px;
+    grid-template-columns: repeat(12, minmax(20px, 1fr));
+  }
+  
   .filter-bar { flex-direction: column; align-items: stretch; }
-  .modal { padding: 24px 16px; }
+  .modal { padding: 24px 16px; width: 95%; }
+  
+  /* Fix layout for donut chart on very small screens */
+  .glass-card > div > .donut-chart { transform: scale(0.8); transform-origin: left center; margin-right: -20px; }
+  
   .chat-panel { height: 400px; }
-  .page-header h1 { font-size: 1.5rem; }
 }
 
 /* ── Small Mobile (≤480px) ─────────────────────────────── */
@@ -48,6 +76,7 @@
   .podium-1 .podium-base { height: 60px; width: 64px; }
   .podium-2 .podium-base { height: 44px; width: 56px; }
   .podium-3 .podium-base { height: 32px; width: 56px; }
+  .podium-avatar { margin-bottom: 8px; }
 }
 
 /* ── Auth pages ────────────────────────────────────────── */
@@ -55,6 +84,7 @@
   .auth-container { grid-template-columns: 1fr; }
   .auth-brand { display: none; }
   .auth-form-side { padding: 32px 24px; }
+  .form-row { grid-template-columns: 1fr; }
 }
 
 /* ── Print ─────────────────────────────────────────────── */
