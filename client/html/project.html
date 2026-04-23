@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projects — ProjectHub</title>
+  <meta name="description" content="Manage and assign projects to your team.">
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/sidebar.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -16,12 +17,25 @@
       <div class="page-header animate-in flex-between">
         <div>
           <h1>Projects</h1>
-          <p class="text-muted">Manage your teams and projects</p>
+          <p class="text-muted" id="projects-subtitle">Manage your teams and projects</p>
         </div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-secondary" id="join-btn">🔗 Join Project</button>
-          <button class="btn btn-primary" id="create-btn">➕ New Project</button>
+        <div style="display:flex;gap:10px;" id="header-actions">
+          <!-- Injected based on role -->
         </div>
+      </div>
+
+      <!-- Faculty only: Search bar -->
+      <div class="filter-bar" id="project-filter-bar" style="display:none;">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="project-search" class="form-control" placeholder="Search projects…">
+        </div>
+        <select id="filter-status" class="form-control" style="width:auto;min-width:140px;">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+          <option value="archived">Archived</option>
+        </select>
       </div>
 
       <!-- Projects Grid -->
@@ -38,7 +52,10 @@
               <h2 id="proj-name" style="font-size:1.4rem;"></h2>
               <p id="proj-desc" class="text-muted text-sm" style="margin-top:4px;"></p>
             </div>
-            <button class="btn btn-ghost btn-sm" id="close-detail">✕ Close</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="proj-status-badge" class="badge"></span>
+              <button class="btn btn-ghost btn-sm" id="close-detail">✕ Close</button>
+            </div>
           </div>
           <div class="grid-3" style="margin-bottom:20px;">
             <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--accent-light);" id="proj-stat-members">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Members</div></div>
@@ -56,7 +73,7 @@
           <div class="glass-card">
             <div class="flex-between" style="margin-bottom:16px;">
               <h3 style="font-size:1rem;">Team Members</h3>
-              <button class="btn btn-primary btn-sm" id="add-member-btn">➕ Add</button>
+              <button class="btn btn-primary btn-sm faculty-only" id="add-member-btn" style="display:none;">➕ Add Member</button>
             </div>
             <div id="members-list" style="display:flex;flex-direction:column;gap:8px;"></div>
           </div>
@@ -89,48 +106,97 @@
     buildSidebar('projects');
     buildTopbar('Projects');
 
+    const isFaculty = user.role === 'faculty';
     let socket = null;
     let currentProjectId = null;
     let typingTimer = null;
+    let allProjects = [];
+
+    // ── Setup header buttons based on role ───────────────────
+    const headerActions = document.getElementById('header-actions');
+    if (isFaculty) {
+      headerActions.innerHTML = `
+        <button class="btn btn-primary" id="create-btn">➕ New Project</button>
+      `;
+      document.getElementById('project-filter-bar').style.display = 'flex';
+      document.getElementById('projects-subtitle').textContent = 'Create and assign projects to students';
+    } else {
+      headerActions.innerHTML = `
+        <button class="btn btn-secondary" id="join-btn">🔗 Join Project</button>
+      `;
+      document.getElementById('projects-subtitle').textContent = 'Projects assigned to you';
+    }
+
+    // Show faculty-only elements
+    if (isFaculty) {
+      document.querySelectorAll('.faculty-only').forEach(el => el.style.display = 'flex');
+    }
 
     // ── Load Projects ────────────────────────────────────────
     async function loadProjects() {
       const grid = document.getElementById('projects-grid');
       try {
         const res = await ApiClient.get('/projects');
-        const projects = res.projects || [];
-        if (projects.length === 0) {
-          grid.innerHTML = `
-            <div class="empty-state" style="grid-column:1/-1;">
-              <div class="icon">📁</div>
-              <h3>No projects yet</h3>
-              <p>Create your first project or join an existing one</p>
-            </div>`;
-          return;
-        }
-        grid.innerHTML = projects.map(p => `
-          <div class="glass-card" style="cursor:pointer;" onclick="openProject('${p._id}')">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-              <div style="font-size:2rem;">📁</div>
-              <span style="font-size:0.7rem;color:var(--text-muted);">${new Date(p.createdAt).toLocaleDateString()}</span>
-            </div>
-            <h3 style="font-size:1.05rem;margin-bottom:6px;">${p.name}</h3>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px;">${p.description || 'No description'}</p>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:-8px;">
-                ${(p.members || []).slice(0,4).map(m => `
-                  <div style="width:28px;height:28px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:white;border:2px solid var(--bg-secondary);margin-left:-6px;">${avatarInitials(m.name)}</div>
-                `).join('')}
-                ${p.members?.length > 4 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);margin-left:-6px;">+${p.members.length - 4}</div>` : ''}
-              </div>
-              <span style="font-size:0.78rem;color:var(--text-muted);">${p.members?.length || 0} members</span>
-            </div>
-          </div>
-        `).join('');
+        allProjects = res.projects || [];
+        renderProjects(allProjects);
       } catch (err) {
         grid.innerHTML = `<p class="text-muted">Failed to load projects.</p>`;
       }
     }
+
+    function renderProjects(projects) {
+      const grid = document.getElementById('projects-grid');
+      if (projects.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="icon">📁</div>
+            <h3>${isFaculty ? 'No projects yet' : 'No projects assigned'}</h3>
+            <p>${isFaculty ? 'Create your first project using the button above' : 'Ask your teacher to assign you to a project'}</p>
+          </div>`;
+        return;
+      }
+      const statusColors = { active: 'cyan', completed: 'emerald', archived: 'text-muted' };
+      grid.innerHTML = projects.map(p => {
+        const ownerName = p.owner?.name || 'Unknown';
+        const memberCount = p.members?.length || 0;
+        const statusColor = statusColors[p.status] || 'cyan';
+        return `
+          <div class="glass-card project-card" style="cursor:pointer;" onclick="openProject('${p._id}')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+              <div style="font-size:2rem;">📁</div>
+              <span class="badge badge-${statusColor}" style="font-size:0.7rem;">${p.status}</span>
+            </div>
+            <h3 style="font-size:1.05rem;margin-bottom:6px;">${p.name}</h3>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;">${p.description || 'No description'}</p>
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px;">👨‍🏫 ${ownerName}</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:2px;">
+                ${(p.members || []).slice(0,4).map(m => `
+                  <div style="width:28px;height:28px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:white;border:2px solid var(--bg-secondary);margin-left:-6px;">${avatarInitials(m.user?.name || '')}</div>
+                `).join('')}
+                ${memberCount > 4 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);margin-left:-6px;">+${memberCount - 4}</div>` : ''}
+              </div>
+              <span style="font-size:0.78rem;color:var(--text-muted);">${memberCount} members</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Filter projects
+    document.getElementById('project-search')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const status = document.getElementById('filter-status')?.value;
+      let filtered = allProjects.filter(p => p.name.toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q));
+      if (status) filtered = filtered.filter(p => p.status === status);
+      renderProjects(filtered);
+    });
+    document.getElementById('filter-status')?.addEventListener('change', (e) => {
+      const q = document.getElementById('project-search')?.value.toLowerCase() || '';
+      const status = e.target.value;
+      let filtered = allProjects.filter(p => p.name.toLowerCase().includes(q));
+      if (status) filtered = filtered.filter(p => p.status === status);
+      renderProjects(filtered);
+    });
 
     // ── Open Project Detail ───────────────────────────────────
     window.openProject = async (projectId) => {
@@ -138,12 +204,21 @@
       document.getElementById('project-detail').style.display = 'block';
       document.getElementById('project-detail').scrollIntoView({ behavior: 'smooth' });
 
+      // Show add-member btn only for faculty
+      const addMemberBtn = document.getElementById('add-member-btn');
+      if (addMemberBtn) addMemberBtn.style.display = isFaculty ? 'flex' : 'none';
+
       try {
         const res = await ApiClient.get(`/projects/${projectId}`);
         const p = res.project;
         document.getElementById('proj-name').textContent = p.name;
         document.getElementById('proj-desc').textContent = p.description || '';
         document.getElementById('proj-stat-members').textContent = p.members?.length || 0;
+
+        const statusBadge = document.getElementById('proj-status-badge');
+        const statusColors = { active: 'cyan', completed: 'emerald', archived: 'text-muted' };
+        statusBadge.textContent = p.status;
+        statusBadge.className = `badge badge-${statusColors[p.status] || 'cyan'}`;
 
         // Load task stats
         try {
@@ -158,21 +233,30 @@
           setTimeout(() => { document.getElementById('proj-progress').style.width = `${pct}%`; }, 100);
         } catch (_) {}
 
-        // Members list
+        // ── Members list — access m.user (nested object) ──
         const ml = document.getElementById('members-list');
-        ml.innerHTML = (p.members || []).map(m => `
-          <div class="member-card">
-            <div class="member-avatar">${m.avatar ? `<img src="${m.avatar}" alt="">` : avatarInitials(m.name)}</div>
-            <div class="member-info">
-              <div class="member-name">${m.name}</div>
-              <div class="member-email">${m.email}</div>
-            </div>
-            <span class="badge badge-${m.role}">${m.role}</span>
-            ${p.createdBy === user.id && m._id !== user.id ? `
-              <button class="btn btn-danger btn-sm" onclick="removeMember('${projectId}','${m._id}')">✕</button>
-            ` : ''}
-          </div>
-        `).join('');
+        ml.innerHTML = (p.members || []).map(m => {
+          // m = { user: { _id, name, email, avatar, role }, role, joinedAt }
+          const memberUser = m.user || {};
+          const memberName = memberUser.name || 'Unknown';
+          const memberEmail = memberUser.email || '';
+          const memberRole = memberUser.role || m.role || 'student';
+          const memberId = memberUser._id || '';
+          const isOwner = p.owner?._id === memberId || p.owner === memberId;
+
+          return `
+            <div class="member-card">
+              <div class="member-avatar">${memberUser.avatar ? `<img src="${memberUser.avatar}" alt="">` : avatarInitials(memberName)}</div>
+              <div class="member-info">
+                <div class="member-name">${memberName} ${isOwner ? '👑' : ''}</div>
+                <div class="member-email">${memberEmail}</div>
+              </div>
+              <span class="badge badge-${memberRole === 'faculty' ? 'violet' : 'cyan'}">${memberRole}</span>
+              ${isFaculty && !isOwner && memberId ? `
+                <button class="btn btn-danger btn-sm" title="Remove" onclick="removeMember('${projectId}','${memberId}')">✕</button>
+              ` : ''}
+            </div>`;
+        }).join('');
       } catch (err) {
         showToast('error', 'Error', 'Failed to load project details');
       }
@@ -184,33 +268,32 @@
     // ── Socket.IO Chat ────────────────────────────────────────
     function initSocket(projectId) {
       if (socket) { socket.disconnect(); }
-      const script = document.createElement('script');
-      script.src = '/socket.io/socket.io.js';
-      script.onload = () => {
+      const existing = document.querySelector('script[src="/socket.io/socket.io.js"]');
+      const loadSocket = () => {
         socket = io();
         socket.emit('join:project', { projectId, userId: user.id, userName: user.name });
 
         socket.on('chat:message', ({ message, user: sender, timestamp }) => {
           appendMessage(sender, message, timestamp, sender.id === user.id);
         });
-
         socket.on('chat:typing', ({ userName, isTyping }) => {
-          const ind = document.getElementById('typing-indicator');
-          ind.textContent = isTyping ? `${userName} is typing…` : '';
+          document.getElementById('typing-indicator').textContent = isTyping ? `${userName} is typing…` : '';
         });
-
         socket.on('online:members', (members) => {
           document.getElementById('online-count').textContent = `${members.length} online`;
         });
         socket.on('user:joined', ({ userName }) => showToast('info', 'User joined', `${userName} joined the project`));
         socket.on('task:created', ({ task }) => showToast('info', '📝 New Task', `"${task.title}" was added`));
-        socket.on('task:updated', ({ task }) => showToast('info', '🔄 Task Updated', task.title));
+        socket.on('task:updated', ({ task, newStatus }) => showToast('info', '🔄 Task Updated', `${task.title} → ${newStatus || task.status}`));
         socket.on('notification', ({ message }) => showToast('info', '🔔 Notification', message));
       };
-      if (!document.querySelector('script[src="/socket.io/socket.io.js"]')) {
+      if (!existing) {
+        const script = document.createElement('script');
+        script.src = '/socket.io/socket.io.js';
+        script.onload = loadSocket;
         document.head.appendChild(script);
       } else {
-        script.onload();
+        loadSocket();
       }
     }
 
@@ -219,7 +302,7 @@
       const div = document.createElement('div');
       div.className = `chat-message ${isOwn ? 'own' : ''}`;
       div.innerHTML = `
-        <div class="chat-msg-avatar">${avatarInitials(sender.name)}</div>
+        <div class="chat-msg-avatar">${avatarInitials(sender.name || 'U')}</div>
         <div class="chat-msg-body">
           ${!isOwn ? `<div class="chat-msg-name">${sender.name}</div>` : ''}
           <div class="chat-bubble">${escapeHTML(message)}</div>
@@ -231,10 +314,9 @@
     }
 
     function escapeHTML(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    // Send message
     document.getElementById('send-msg-btn').addEventListener('click', sendMessage);
     document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
     document.getElementById('chat-input').addEventListener('input', () => {
@@ -255,6 +337,7 @@
 
     // ── Remove Member ──────────────────────────────────────────
     window.removeMember = async (projectId, memberId) => {
+      if (!confirm('Remove this member from the project?')) return;
       try {
         await ApiClient.delete(`/projects/${projectId}/members/${memberId}`);
         showToast('success', 'Removed', 'Member removed from project');
@@ -262,38 +345,40 @@
       } catch (err) { showToast('error', 'Error', err.message); }
     };
 
-    // ── Add Member Modal ───────────────────────────────────────
+    // ── Add Member Modal (Faculty) ─────────────────────────────
     document.getElementById('add-member-btn')?.addEventListener('click', async () => {
-      let usersHTML = '<option value="">Select user</option>';
+      let usersHTML = '<option value="">— Select student —</option>';
       try {
         const res = await ApiClient.get('/users');
-        (res.users || []).forEach(u => { usersHTML += `<option value="${u._id}">${u.name} (${u.role})</option>`; });
+        (res.users || [])
+          .filter(u => u.role === 'student')
+          .forEach(u => { usersHTML += `<option value="${u._id}">${u.name} (${u.email})</option>`; });
       } catch (_) {}
 
       const overlay = openModal(`
-        <div class="modal-header"><h3>Add Member</h3><button class="modal-close">×</button></div>
-        <div class="form-group"><label>Select User</label><select id="member-select" class="form-control">${usersHTML}</select></div>
-        <button class="btn btn-primary" style="width:100%" id="add-member-submit">Add to Project</button>
+        <div class="modal-header"><h3>Add Member to Project</h3><button class="modal-close">×</button></div>
+        <div class="form-group"><label>Select Student</label><select id="member-select" class="form-control">${usersHTML}</select></div>
+        <button class="btn btn-primary" style="width:100%" id="add-member-submit">➕ Add to Project</button>
       `);
       overlay.querySelector('#add-member-submit').addEventListener('click', async () => {
         const memberId = overlay.querySelector('#member-select').value;
-        if (!memberId) return;
+        if (!memberId) return showToast('warning', 'Required', 'Please select a student');
         try {
           await ApiClient.post(`/projects/${currentProjectId}/members`, { memberId });
-          showToast('success', 'Added', 'Member added to project');
+          showToast('success', 'Added!', 'Student added to project');
           overlay.remove();
           openProject(currentProjectId);
         } catch (err) { showToast('error', 'Error', err.message); }
       });
     });
 
-    // ── Create Project Modal ───────────────────────────────────
-    document.getElementById('create-btn').addEventListener('click', () => {
+    // ── Create Project Modal (Faculty) ─────────────────────────
+    document.getElementById('create-btn')?.addEventListener('click', () => {
       const overlay = openModal(`
         <div class="modal-header"><h3>Create New Project</h3><button class="modal-close">×</button></div>
-        <div class="form-group"><label>Project Name *</label><input type="text" id="proj-name-inp" class="form-control" placeholder="My Awesome Project" required></div>
+        <div class="form-group"><label>Project Name *</label><input type="text" id="proj-name-inp" class="form-control" placeholder="e.g. INT 219 Web Project" required></div>
         <div class="form-group"><label>Description</label><textarea id="proj-desc-inp" class="form-control" rows="3" placeholder="What is this project about?" style="resize:vertical;"></textarea></div>
-        <button class="btn btn-primary" style="width:100%" id="create-proj-submit">Create Project</button>
+        <button class="btn btn-primary" style="width:100%" id="create-proj-submit">🚀 Create Project</button>
       `);
       overlay.querySelector('#create-proj-submit').addEventListener('click', async () => {
         const name = overlay.querySelector('#proj-name-inp').value.trim();
@@ -308,12 +393,13 @@
       });
     });
 
-    // ── Join Project ───────────────────────────────────────────
-    document.getElementById('join-btn').addEventListener('click', () => {
+    // ── Join Project (Student) ─────────────────────────────────
+    document.getElementById('join-btn')?.addEventListener('click', () => {
       const overlay = openModal(`
         <div class="modal-header"><h3>Join a Project</h3><button class="modal-close">×</button></div>
+        <p class="text-muted text-sm" style="margin-bottom:16px;">Ask your teacher for the Project ID, then paste it below.</p>
         <div class="form-group"><label>Project ID</label><input type="text" id="join-id" class="form-control" placeholder="Paste the Project ID here"></div>
-        <button class="btn btn-primary" style="width:100%" id="join-submit">Join Project</button>
+        <button class="btn btn-primary" style="width:100%" id="join-submit">🔗 Join Project</button>
       `);
       overlay.querySelector('#join-submit').addEventListener('click', async () => {
         const projectId = overlay.querySelector('#join-id').value.trim();

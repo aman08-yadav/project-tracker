@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tasks — ProjectHub</title>
+  <meta name="description" content="Manage and track all project tasks with kanban board.">
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/sidebar.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -16,7 +17,7 @@
       <div class="page-header animate-in flex-between">
         <div>
           <h1>Tasks</h1>
-          <p class="text-muted">Manage and track all project tasks</p>
+          <p class="text-muted" id="tasks-subtitle">Manage and track project tasks</p>
         </div>
         <button class="btn btn-primary" id="new-task-btn">➕ New Task</button>
       </div>
@@ -35,9 +36,9 @@
         </select>
         <select id="filter-priority" class="form-control" style="width:auto;min-width:140px;">
           <option value="">All Priority</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
+          <option value="high">🔴 High</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
         </select>
         <select id="filter-project" class="form-control" style="width:auto;min-width:160px;">
           <option value="">All Projects</option>
@@ -74,6 +75,13 @@
           <div class="kanban-cards" id="col-completed" data-status="completed"></div>
         </div>
       </div>
+
+      <!-- Pagination -->
+      <div id="pagination-bar" style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:24px;display:none;">
+        <button class="btn btn-ghost btn-sm" id="prev-page" disabled>← Prev</button>
+        <span id="page-info" style="font-size:0.85rem;color:var(--text-muted);">Page 1</span>
+        <button class="btn btn-ghost btn-sm" id="next-page">Next →</button>
+      </div>
     </div>
   </div>
 
@@ -100,9 +108,9 @@
         <div class="form-group">
           <label>Priority</label>
           <select id="task-priority" class="form-control">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
+            <option value="low">🟢 Low</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="high">🔴 High</option>
           </select>
         </div>
         <div class="form-group">
@@ -110,7 +118,7 @@
           <input type="date" id="task-due" class="form-control">
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="assignee-group">
         <label>Assign To</label>
         <select id="task-assignee" class="form-control">
           <option value="">Unassigned</option>
@@ -132,13 +140,23 @@
     buildSidebar('tasks');
     buildTopbar('Tasks');
 
+    const isFaculty = user.role === 'faculty';
     let allTasks = [];
     let projects = [];
+    let currentPage = 1;
+    const PAGE_LIMIT = 20;
+
+    if (!isFaculty) {
+      document.getElementById('tasks-subtitle').textContent = 'Your assigned tasks';
+    }
 
     async function loadProjects() {
       try {
         const res = await ApiClient.get('/projects');
         projects = res.projects || [];
+        // Populate project filter
+        const sel = document.getElementById('filter-project');
+        projects.forEach(p => { sel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
       } catch (_) {}
     }
 
@@ -146,35 +164,45 @@
       const cols = { 'pending': [], 'in-progress': [], 'completed': [] };
       tasks.forEach(t => { if (cols[t.status]) cols[t.status].push(t); });
 
-      Object.entries(cols).forEach(([status, tasks]) => {
+      Object.entries(cols).forEach(([status, colTasks]) => {
         const col = document.getElementById(`col-${status}`);
         const cnt = document.getElementById(`cnt-${status === 'in-progress' ? 'inprogress' : status}`);
-        if (cnt) cnt.textContent = tasks.length;
+        if (cnt) cnt.textContent = colTasks.length;
         if (!col) return;
 
-        if (tasks.length === 0) {
-          col.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:0.82rem;">Drop tasks here</div>`;
+        if (colTasks.length === 0) {
+          col.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:0.82rem;">No tasks here</div>`;
           return;
         }
 
-        col.innerHTML = tasks.map(t => {
+        col.innerHTML = colTasks.map(t => {
           const due = t.dueDate ? new Date(t.dueDate) : null;
           const overdue = due && due < new Date() && t.status !== 'completed';
+          const isMyTask = t.assignedTo?._id === user.id || t.assignedTo === user.id;
+          const canChangeStatus = isFaculty || isMyTask;
+
           return `
-            <div class="kanban-card" data-id="${t._id}" draggable="true">
+            <div class="kanban-card" data-id="${t._id}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                 <div style="font-size:0.9rem;font-weight:600;flex:1;">${t.title}</div>
                 <span class="badge badge-${t.priority}">${t.priority}</span>
               </div>
               ${t.description ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;line-height:1.4;">${t.description.slice(0,80)}${t.description.length>80?'…':''}</div>` : ''}
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px;">
+                📁 ${t.project?.name || 'Unknown'}
+              </div>
               <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
                 ${t.assignedTo ? `<span style="font-size:0.72rem;color:var(--text-muted);">👤 ${t.assignedTo.name}</span>` : '<span></span>'}
                 ${due ? `<span class="task-deadline ${overdue?'overdue':''}">${overdue?'🔴 ':'📅 '}${due.toLocaleDateString()}</span>` : ''}
               </div>
-              <div style="display:flex;gap:6px;margin-top:10px;">
+              ${canChangeStatus ? `
+              <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
                 ${status !== 'in-progress' && status !== 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="changeStatus('${t._id}','in-progress')" style="font-size:0.72rem;padding:4px 8px;">→ In Progress</button>` : ''}
                 ${status !== 'completed' ? `<button class="btn btn-ghost btn-sm" onclick="changeStatus('${t._id}','completed')" style="font-size:0.72rem;padding:4px 8px;color:var(--emerald);">✓ Complete</button>` : ''}
+                ${status === 'in-progress' ? `<button class="btn btn-ghost btn-sm" onclick="changeStatus('${t._id}','pending')" style="font-size:0.72rem;padding:4px 8px;color:var(--text-muted);">← Pending</button>` : ''}
+                ${isFaculty ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t._id}')" style="font-size:0.72rem;padding:4px 8px;margin-left:auto;">🗑</button>` : ''}
               </div>
+              ` : ''}
             </div>
           `;
         }).join('');
@@ -196,11 +224,25 @@
       renderKanban(filtered);
     }
 
-    async function loadTasks() {
+    async function loadTasks(page = 1) {
       try {
-        const res = await ApiClient.get('/tasks');
+        const res = await ApiClient.get(`/tasks?limit=${PAGE_LIMIT}&page=${page}`);
         allTasks = res.tasks || [];
+        const pagination = res.pagination || {};
+
         filterAndRender();
+
+        // Pagination controls
+        const paginationBar = document.getElementById('pagination-bar');
+        if (pagination.pages > 1) {
+          paginationBar.style.display = 'flex';
+          document.getElementById('page-info').textContent = `Page ${pagination.page} of ${pagination.pages}`;
+          document.getElementById('prev-page').disabled = pagination.page <= 1;
+          document.getElementById('next-page').disabled = pagination.page >= pagination.pages;
+          currentPage = pagination.page;
+        } else {
+          paginationBar.style.display = 'none';
+        }
       } catch (err) {
         showToast('error', 'Error', 'Failed to load tasks');
       }
@@ -218,6 +260,22 @@
       }
     };
 
+    window.deleteTask = async (taskId) => {
+      if (!confirm('Delete this task?')) return;
+      try {
+        await ApiClient.delete(`/tasks/${taskId}`);
+        allTasks = allTasks.filter(t => t._id !== taskId);
+        filterAndRender();
+        showToast('success', 'Deleted', 'Task removed');
+      } catch (err) {
+        showToast('error', 'Error', err.message);
+      }
+    };
+
+    // Pagination
+    document.getElementById('prev-page').addEventListener('click', () => loadTasks(currentPage - 1));
+    document.getElementById('next-page').addEventListener('click', () => loadTasks(currentPage + 1));
+
     // New Task Modal
     document.getElementById('new-task-btn').addEventListener('click', () => {
       const tpl = document.getElementById('task-modal-tpl').content.cloneNode(true);
@@ -228,19 +286,32 @@
       // Populate project select
       const projSel = overlay.querySelector('#task-project');
       projects.forEach(p => { projSel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
+      if (projects.length === 0) {
+        projSel.innerHTML = '<option value="">No projects available</option>';
+      }
 
-      // Populate assignee select (load members)
+      // Load members when project selected
       projSel.addEventListener('change', async () => {
         const sel = overlay.querySelector('#task-assignee');
         sel.innerHTML = '<option value="">Unassigned</option>';
         if (!projSel.value) return;
         try {
           const res = await ApiClient.get(`/projects/${projSel.value}`);
+          // m = { user: {...}, role } — access m.user
           (res.project?.members || []).forEach(m => {
-            sel.innerHTML += `<option value="${m._id}">${m.name}</option>`;
+            const memberUser = m.user || {};
+            if (memberUser._id) {
+              sel.innerHTML += `<option value="${memberUser._id}">${memberUser.name} (${memberUser.role})</option>`;
+            }
           });
         } catch (_) {}
       });
+
+      // Auto-select first project and trigger change
+      if (projects.length > 0) {
+        projSel.value = projects[0]._id;
+        projSel.dispatchEvent(new Event('change'));
+      }
 
       overlay.querySelector('#task-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -249,8 +320,8 @@
         btnText.style.display = 'none'; spinner.style.display = 'inline-block';
         try {
           await ApiClient.post('/tasks', {
-            title: overlay.querySelector('#task-title').value,
-            description: overlay.querySelector('#task-desc').value,
+            title: overlay.querySelector('#task-title').value.trim(),
+            description: overlay.querySelector('#task-desc').value.trim(),
             projectId: overlay.querySelector('#task-project').value,
             priority: overlay.querySelector('#task-priority').value,
             dueDate: overlay.querySelector('#task-due').value || null,
@@ -272,12 +343,57 @@
       document.getElementById(id)?.addEventListener('change', filterAndRender);
     });
 
-    // Populate project filter
+    // ── Real-time Socket.IO ───────────────────────────────────
+    // Connect to socket and join all user's project rooms
+    // so task updates from ANY user are reflected instantly
+    async function initRealtime() {
+      // Load the socket.io client script
+      const loadSocketScript = () => new Promise((resolve) => {
+        if (window.io) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = '/socket.io/socket.io.js';
+        script.onload = resolve;
+        document.head.appendChild(script);
+      });
+
+      await loadSocketScript();
+
+      const socket = io();
+
+      // Join all project rooms so we receive updates from teammates
+      projects.forEach(p => {
+        socket.emit('join:project', { projectId: p._id, userId: user.id, userName: user.name });
+      });
+
+      // Task created by someone else → refresh board silently
+      socket.on('task:created', ({ task }) => {
+        showToast('info', '📝 New Task', `"${task.title}" was added`);
+        loadTasks(currentPage);   // refresh from server
+      });
+
+      // Task status updated by someone else → update in-place
+      socket.on('task:updated', ({ task, updatedBy, newStatus }) => {
+        // Update the task in our local array
+        const idx = allTasks.findIndex(t => t._id === (task._id || task));
+        if (idx !== -1) {
+          allTasks[idx] = { ...allTasks[idx], ...task };
+          filterAndRender();
+        } else {
+          loadTasks(currentPage);
+        }
+        if (updatedBy && updatedBy !== user.name) {
+          showToast('info', '🔄 Task Updated', `${updatedBy} → ${newStatus || 'updated'}`);
+        }
+      });
+
+      console.log('🔌 Real-time task sync active for', projects.length, 'projects');
+    }
+
+    // Init
     async function init() {
       await loadProjects();
-      const sel = document.getElementById('filter-project');
-      projects.forEach(p => { sel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
-      loadTasks();
+      await loadTasks();
+      initRealtime();   // connect after projects are loaded
     }
     init();
   </script>

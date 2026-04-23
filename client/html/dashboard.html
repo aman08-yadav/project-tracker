@@ -12,13 +12,12 @@
 </head>
 <body>
   <div id="toast-container"></div>
-  <!-- Sidebar & Topbar injected by JS -->
   <div class="app-layout">
     <div class="main-content" id="main-content">
 
       <!-- Page Header -->
       <div class="page-header animate-in">
-        <h1>Dashboard</h1>
+        <h1 id="dashboard-title">Dashboard</h1>
         <p class="text-muted" id="greeting">Welcome back!</p>
       </div>
 
@@ -27,7 +26,7 @@
         <div class="stat-card violet">
           <div class="stat-icon">📁</div>
           <div class="stat-value" id="stat-projects">—</div>
-          <div class="stat-label">My Projects</div>
+          <div class="stat-label" id="label-projects">My Projects</div>
         </div>
         <div class="stat-card cyan">
           <div class="stat-icon">✅</div>
@@ -87,20 +86,22 @@
         <!-- Quick Actions -->
         <div class="glass-card">
           <h3 style="font-size:1rem; margin-bottom:20px;">Quick Actions</h3>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">
-              📁 <span>View My Projects</span>
-            </a>
-            <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">
-              ➕ <span>Create New Task</span>
-            </a>
-            <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;">
-              📤 <span>Upload File</span>
-            </a>
-            <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">
-              🏆 <span>View Leaderboard</span>
-            </a>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="quick-actions">
+            <!-- Injected by JS based on role -->
           </div>
+        </div>
+      </div>
+
+      <!-- Faculty Only: Students Progress Table -->
+      <div class="glass-card faculty-section" id="students-progress-card" style="display:none;margin-bottom:24px;">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h3 style="font-size:1rem;">📊 Students Progress Overview</h3>
+          <a href="analytics.html" class="btn btn-ghost btn-sm">Full Analytics →</a>
+        </div>
+        <div id="students-progress-table">
+          <div class="skeleton" style="height:60px;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:60px;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:60px;"></div>
         </div>
       </div>
 
@@ -143,29 +144,53 @@
     buildSidebar('dashboard');
     buildTopbar('Dashboard');
 
+    const isFaculty = user.role === 'faculty';
+
     // Greeting
     const hr = new Date().getHours();
     const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('greeting').textContent = `${greet}, ${user.name}! 👋`;
 
-    // Action icons for timeline
+    // Quick Actions — role specific
+    const qaEl = document.getElementById('quick-actions');
+    if (isFaculty) {
+      document.getElementById('dashboard-title').textContent = 'Faculty Dashboard';
+      document.getElementById('label-projects').textContent = 'Total Projects';
+      document.getElementById('students-progress-card').style.display = 'block';
+      qaEl.innerHTML = `
+        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">📁 <span>Manage Projects</span></a>
+        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">➕ <span>Create Task</span></a>
+        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">📈 <span>View Analytics</span></a>
+        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">🏆 <span>Leaderboard</span></a>
+      `;
+    } else {
+      qaEl.innerHTML = `
+        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">📁 <span>My Projects</span></a>
+        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">✅ <span>My Tasks</span></a>
+        <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;">📤 <span>Upload File</span></a>
+        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">🏆 <span>Leaderboard</span></a>
+      `;
+    }
+
     const actionIcons = {
       task_created: '📝', task_updated: '🔄', task_completed: '✅',
-      file_uploaded: '📎', member_added: '👤', project_created: '📁', default: '⚡'
+      file_uploaded: '📎', member_added: '👤', member_removed: '👤',
+      project_created: '📁', project_updated: '📁', default: '⚡'
     };
     const actionLabels = {
-      task_created: 'created a task', task_updated: 'updated a task', task_completed: 'completed a task',
-      file_uploaded: 'uploaded a file', member_added: 'added a member', project_created: 'created a project'
+      task_created: 'created a task', task_updated: 'updated a task', task_completed: '✅ completed a task',
+      file_uploaded: 'uploaded a file', member_added: 'added a member', member_removed: 'removed a member',
+      project_created: 'created a project', project_updated: 'updated a project',
     };
 
     async function loadDashboard() {
       try {
-        // Load analytics
+        // Fetch analytics from API (not stale localStorage)
         const analyticsRes = await ApiClient.get(`/analytics/user/${user.id}`);
         const a = analyticsRes.analytics || {};
         const score = (a.tasksCompleted || 0) * 10 + (a.uploadsCount || 0) * 5 + (a.activityCount || 0);
 
-        animateCounter(document.getElementById('stat-projects'), user.projectIds?.length || 0);
+        animateCounter(document.getElementById('stat-projects'), a.projectsCount || 0);
         animateCounter(document.getElementById('stat-tasks'), a.tasksCompleted || 0);
         animateCounter(document.getElementById('stat-uploads'), a.uploadsCount || 0);
         animateCounter(document.getElementById('stat-score'), score);
@@ -177,7 +202,7 @@
         document.getElementById('cnt-inprogress').textContent = a.tasksInProgress || 0;
         document.getElementById('cnt-pending').textContent = a.tasksPending || 0;
 
-        const circ = 2 * Math.PI * 60; // 377
+        const circ = 2 * Math.PI * 60;
         const pct = total > 0 ? (a.tasksCompleted || 0) / total : 0;
         const ipPct = total > 0 ? (a.tasksInProgress || 0) / total : 0;
 
@@ -186,7 +211,9 @@
           document.getElementById('donut-inprogress').style.strokeDashoffset = circ * (1 - ipPct);
           document.getElementById('donut-pct').textContent = Math.round(pct * 100) + '%';
         }, 100);
-      } catch (_) {}
+      } catch (e) {
+        console.error('Analytics load error:', e);
+      }
 
       // Activity Timeline
       try {
@@ -225,7 +252,7 @@
           tasksEl.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No tasks assigned</h3><p>You're all caught up!</p></div>`;
         } else {
           tasksEl.innerHTML = tasks.slice(0,4).map(t => `
-            <div class="task-card" onclick="window.location.href='tasks.html'">
+            <div class="task-card" onclick="window.location.href='tasks.html'" style="cursor:pointer;">
               <div class="flex-between">
                 <div class="task-title">${t.title}</div>
                 <span class="badge badge-${t.priority}">${t.priority}</span>
@@ -233,6 +260,7 @@
               <div class="task-desc">${t.description || 'No description'}</div>
               <div class="task-meta">
                 <span class="badge badge-${t.status}">${t.status}</span>
+                ${t.project?.name ? `<span style="font-size:0.75rem;color:var(--text-muted);">📁 ${t.project.name}</span>` : ''}
                 ${t.dueDate ? `<span class="task-deadline">${new Date(t.dueDate) < new Date() ? '🔴' : '📅'} ${new Date(t.dueDate).toLocaleDateString()}</span>` : ''}
               </div>
             </div>
@@ -241,9 +269,89 @@
       } catch (_) {
         document.getElementById('my-tasks-list').innerHTML = `<p class="text-muted text-sm">Failed to load tasks.</p>`;
       }
+
+      // Faculty: Students Progress Table
+      if (isFaculty) {
+        try {
+          const res = await ApiClient.get('/analytics/students-progress');
+          const progress = res.progress || [];
+          const tableEl = document.getElementById('students-progress-table');
+          if (progress.length === 0) {
+            tableEl.innerHTML = `<p class="text-muted text-sm">No students registered yet.</p>`;
+          } else {
+            tableEl.innerHTML = `
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                  <thead>
+                    <tr style="border-bottom:1px solid var(--border);">
+                      <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:500;">Student</th>
+                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">Projects</th>
+                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">Tasks ✅</th>
+                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">🔄</th>
+                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">⬜</th>
+                      <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:500;">Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${progress.map(p => `
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                        <td style="padding:10px 8px;">
+                          <div style="font-weight:600;">${p.student.name}</div>
+                          <div style="font-size:0.75rem;color:var(--text-muted);">${p.student.email}</div>
+                        </td>
+                        <td style="text-align:center;padding:10px 8px;">${p.projectsCount}</td>
+                        <td style="text-align:center;padding:10px 8px;color:var(--emerald);">${p.tasksCompleted}</td>
+                        <td style="text-align:center;padding:10px 8px;color:var(--cyan);">${p.tasksInProgress}</td>
+                        <td style="text-align:center;padding:10px 8px;color:var(--text-muted);">${p.tasksPending}</td>
+                        <td style="padding:10px 8px;">
+                          <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);">
+                              <div style="height:6px;border-radius:3px;background:var(--gradient-brand);width:${p.completionRate}%;transition:width 0.8s;"></div>
+                            </div>
+                            <span style="font-size:0.75rem;color:var(--text-muted);min-width:32px;">${p.completionRate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>`;
+          }
+        } catch (_) {
+          document.getElementById('students-progress-table').innerHTML = `<p class="text-muted text-sm">Failed to load student progress.</p>`;
+        }
+      }
     }
 
     loadDashboard();
+
+    // ── Real-time dashboard refresh ────────────────────────────
+    // When any teammate updates a task, dashboard stats refresh live
+    const initDashboardSocket = async () => {
+      const loadScript = () => new Promise(resolve => {
+        if (window.io) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = '/socket.io/socket.io.js';
+        s.onload = resolve;
+        document.head.appendChild(s);
+      });
+      await loadScript();
+
+      const socket = io();
+
+      // Join user's projects for real-time updates
+      try {
+        const res = await ApiClient.get('/projects');
+        (res.projects || []).forEach(p => {
+          socket.emit('join:project', { projectId: p._id, userId: user.id, userName: user.name });
+        });
+      } catch (_) {}
+
+      // Refresh stats when tasks change
+      socket.on('task:updated', () => loadDashboard());
+      socket.on('task:created', () => loadDashboard());
+    };
+    initDashboardSocket();
   </script>
 </body>
 </html>

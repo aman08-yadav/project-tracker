@@ -26,6 +26,9 @@ const server = http.createServer(app);
 const io = initSockets(server);
 app.set('io', io);
 
+// Trust Render's HTTPS proxy (required for secure cookies on Render)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
@@ -41,8 +44,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production',  // true on Render (HTTPS)
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 }));
