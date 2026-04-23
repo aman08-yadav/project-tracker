@@ -335,7 +335,7 @@ export function openProfileModal() {
       const name = document.getElementById('profile-name').value;
       const pwd = document.getElementById('profile-pwd').value;
 
-      const res = await ApiClient.put(\`/users/profile/\${user.id}\`, { name, password: pwd });
+      const res = await ApiClient.put(`/users/profile/${user.id}`, { name, password: pwd });
       
       // Update local storage
       const updatedUser = { ...user, name: res.user.name };
