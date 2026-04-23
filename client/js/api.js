@@ -19,11 +19,11 @@ async function request(method, path, body = null, isFormData = false) {
 
   const res = await fetch(`${BASE}${path}`, options);
 
-  // Handle 401 — redirect to login
-  if (res.status === 401) {
+  // Handle 401 — redirect to login (skip for auth endpoints)
+  if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/register')) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    if (!window.location.pathname.includes('login')) {
+    if (!window.location.pathname.includes('login') && !window.location.pathname.includes('signup')) {
       window.location.href = '/html/login.html';
     }
     throw new Error('Session expired. Please log in again.');
