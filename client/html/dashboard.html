@@ -247,7 +247,17 @@
         animateCounter(document.getElementById('stat-projects'), a.projectsCount || 0);
         animateCounter(document.getElementById('stat-tasks'), a.tasksCompleted || 0);
         animateCounter(document.getElementById('stat-uploads'), a.uploadsCount || 0);
-        animateCounter(document.getElementById('stat-score'), score);
+        
+        if (isFaculty) {
+          try {
+            const uRes = await ApiClient.get('/users');
+            document.querySelector('.stat-card.rose .stat-label').textContent = 'Registered Users';
+            document.querySelector('.stat-card.rose .stat-trend').textContent = '↑ Total Accounts';
+            animateCounter(document.getElementById('stat-score'), uRes.users?.length || 0);
+          } catch (_) {}
+        } else {
+          animateCounter(document.getElementById('stat-score'), score);
+        }
 
         // Donut chart
         const total = (a.tasksCompleted || 0) + (a.tasksInProgress || 0) + (a.tasksPending || 0);

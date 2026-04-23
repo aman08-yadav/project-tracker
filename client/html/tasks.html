@@ -335,8 +335,17 @@
         const pId = pSelect.value;
         if (!pId) { aSelect.innerHTML = '<option value="">Select Member</option>'; return; }
         try {
-          const p = await ApiClient.get(`/projects/${pId}`);
-          aSelect.innerHTML = p.project.members.map(m => `<option value="${m._id}" ${task?.assignedTo?._id === m._id ? 'selected' : ''}>${m.name} (${m.role})</option>`).join('');
+          if (user.role === 'faculty') {
+            const res = await ApiClient.get('/users');
+            const allUsers = res.users || [];
+            aSelect.innerHTML = '<option value="">Select Member (All Students)</option>' + 
+              allUsers.map(m => `<option value="${m._id}" ${task?.assignedTo?._id === m._id ? 'selected' : ''}>${m.name} (${m.role})</option>`).join('');
+          } else {
+            const p = await ApiClient.get(`/projects/${pId}`);
+            const members = p.project?.members || [];
+            aSelect.innerHTML = '<option value="">Select Member</option>' + 
+              members.map(m => `<option value="${m.user?._id || m._id}" ${task?.assignedTo?._id === (m.user?._id || m._id) ? 'selected' : ''}>${m.user?.name || m.name} (${m.role})</option>`).join('');
+          }
         } catch (e) {
           console.error(e);
         }

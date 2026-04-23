@@ -62,9 +62,12 @@ const getTasks = async (req, res, next) => {
     if (projectId) {
       filter.project = projectId;
     } else if (req.user.role !== 'faculty') {
-      // Students: only see tasks in their projects
+      // Students: see tasks in their projects OR tasks explicitly assigned to them
       const myProjects = req.user.projectIds || [];
-      filter.project = { $in: myProjects };
+      filter.$or = [
+        { project: { $in: myProjects } },
+        { assignedTo: req.user._id }
+      ];
     }
 
     if (status) filter.status = status;
