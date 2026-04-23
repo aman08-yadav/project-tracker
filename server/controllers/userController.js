@@ -85,4 +85,40 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-module.exports = { getLeaderboard, getProfile, getAllUsers };
+// ─── PUT /api/v1/users/profile/:id ───────────────────────────
+const updateProfile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (id !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this profile.' });
+    }
+
+    const { name, password } = req.body;
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    if (name) user.name = name;
+    if (password && password.trim() !== '') {
+      user.password = password;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getLeaderboard, getProfile, getAllUsers, updateProfile };

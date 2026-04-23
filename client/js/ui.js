@@ -2,6 +2,8 @@
 //  UI.JS — Shared UI Utilities: Toast, Sidebar, Topbar, Modals
 // ═══════════════════════════════════════════════════════════
 
+import { ApiClient } from './api.js';
+
 // ── Toast System ────────────────────────────────────────────
 export function initToast() {
   if (!document.getElementById('toast-container')) {
@@ -142,7 +144,7 @@ export function buildTopbar(title = '') {
           🔔
           <span class="notif-badge" id="notif-badge" style="display:none">0</span>
         </button>
-        <div class="user-menu" title="Profile" id="mobile-profile-btn">
+        <div class="user-menu" title="Profile" id="profile-btn">
           <div class="user-avatar">${user?.avatar ? `<img src="${user.avatar}" alt="">` : avatarInitials(user?.name)}</div>
           <span style="font-size:0.9rem;font-weight:600;display:none;">${user?.name?.split(' ')[0] || 'User'}</span>
         </div>
@@ -177,14 +179,8 @@ export function buildTopbar(title = '') {
   // Setup Help Modal
   document.getElementById('help-btn')?.addEventListener('click', openHelpModal);
 
-  // Mobile Topbar Logout
-  document.getElementById('mobile-profile-btn')?.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      if (confirm('Do you want to log out?')) {
-        window.uiLogout();
-      }
-    }
-  });
+  // Setup Profile Modal
+  document.getElementById('profile-btn')?.addEventListener('click', openProfileModal);
 
   // Setup Global Shortcuts
   initKeyboardShortcuts();
@@ -294,6 +290,65 @@ export function openHelpModal() {
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="document.querySelector('.modal-close').click()">Got it, thanks!</button>
   `);
+}
+
+// ── Profile Modal ─────────────────────────────────────────────
+export function openProfileModal() {
+  const user = getUser();
+  const overlay = openModal(`
+    <div class="modal-header">
+      <h3>My Profile</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
+      <div style="width:80px;height:80px;margin-bottom:12px;font-size:2rem;">
+        ${buildAvatar(user, 80)}
+      </div>
+      <h4 style="margin:0;font-size:1.1rem;color:var(--text-primary);">${user.name}</h4>
+      <p style="margin:0;font-size:0.85rem;color:var(--text-muted);text-transform:capitalize;">${user.role}</p>
+    </div>
+    <form id="profile-form" style="margin-bottom:24px;">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="profile-name" class="form-control" value="${user.name}" required>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" class="form-control" value="${user.email}" disabled style="opacity:0.6;cursor:not-allowed;">
+      </div>
+      <div class="form-group" style="margin-bottom:32px;">
+        <label>New Password (Optional)</label>
+        <input type="password" id="profile-pwd" class="form-control" placeholder="Leave blank to keep current">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-bottom:12px;">Update Profile</button>
+      <button type="button" class="btn btn-danger" style="width:100%;" onclick="window.uiLogout()">⏏ Log Out</button>
+    </form>
+  `);
+
+  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+
+    try {
+      const name = document.getElementById('profile-name').value;
+      const pwd = document.getElementById('profile-pwd').value;
+
+      const res = await ApiClient.put(\`/users/profile/\${user.id}\`, { name, password: pwd });
+      
+      // Update local storage
+      const updatedUser = { ...user, name: res.user.name };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      showToast('success', 'Success', 'Profile updated successfully!');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      showToast('error', 'Error', err.message || 'Failed to update profile.');
+      btn.disabled = false;
+      btn.textContent = 'Update Profile';
+    }
+  });
 }
 
 // ── Keyboard Shortcuts ────────────────────────────────────────
