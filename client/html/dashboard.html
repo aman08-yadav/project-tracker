@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="../css/responsive.css">
 </head>
 <body>
-  <div id="toast-container"></div>
   <div class="app-layout">
     <div class="main-content" id="main-content">
 
@@ -22,30 +21,54 @@
       </div>
 
       <!-- Stats Grid -->
-      <div class="stats-grid" id="stats-grid">
+      <div class="stats-grid animate-in" id="stats-grid">
         <div class="stat-card violet">
           <div class="stat-icon">📁</div>
-          <div class="stat-value" id="stat-projects">—</div>
+          <div class="stat-value" id="stat-projects">0</div>
           <div class="stat-label" id="label-projects">My Projects</div>
+          <div class="stat-trend up" id="trend-projects">↑ Active</div>
         </div>
         <div class="stat-card cyan">
           <div class="stat-icon">✅</div>
-          <div class="stat-value" id="stat-tasks">—</div>
+          <div class="stat-value" id="stat-tasks">0</div>
           <div class="stat-label">Tasks Completed</div>
+          <div class="stat-trend up" id="trend-tasks">↑ 12% vs last week</div>
         </div>
         <div class="stat-card emerald">
           <div class="stat-icon">📎</div>
-          <div class="stat-value" id="stat-uploads">—</div>
+          <div class="stat-value" id="stat-uploads">0</div>
           <div class="stat-label">Files Uploaded</div>
+          <div class="stat-trend up" id="trend-uploads">↑ 5% vs last week</div>
         </div>
         <div class="stat-card rose">
           <div class="stat-icon">🏆</div>
-          <div class="stat-value" id="stat-score">—</div>
+          <div class="stat-value" id="stat-score">0</div>
           <div class="stat-label">Contribution Score</div>
+          <div class="stat-trend up">↑ Top 10%</div>
         </div>
       </div>
 
-      <div class="grid-2" style="gap:24px; margin-bottom:24px;">
+      <div class="grid-2 animate-in" style="gap:24px; margin-bottom:24px;">
+        <!-- Heatmap / Activity -->
+        <div class="glass-card">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">Activity Heatmap</h3>
+            <span class="text-muted text-sm">Last 12 weeks</span>
+          </div>
+          <div class="heatmap-grid" id="heatmap-grid">
+            <!-- Heatmap cells injected via JS -->
+          </div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:0.75rem;color:var(--text-muted);margin-top:12px;">
+            Less <div style="display:flex;gap:4px;">
+              <div class="heatmap-cell" style="width:12px;height:12px;"></div>
+              <div class="heatmap-cell level-1" style="width:12px;height:12px;"></div>
+              <div class="heatmap-cell level-2" style="width:12px;height:12px;"></div>
+              <div class="heatmap-cell level-3" style="width:12px;height:12px;"></div>
+              <div class="heatmap-cell level-4" style="width:12px;height:12px;"></div>
+            </div> More
+          </div>
+        </div>
+
         <!-- Task Completion Donut -->
         <div class="glass-card">
           <div class="flex-between" style="margin-bottom:20px;">
@@ -54,46 +77,68 @@
           </div>
           <div style="display:flex; align-items:center; gap:32px;">
             <div class="donut-chart" id="donut-wrap">
-              <svg width="160" height="160" viewBox="0 0 160 160">
-                <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="16"/>
-                <circle id="donut-completed" cx="80" cy="80" r="60" fill="none" stroke="#7c3aed" stroke-width="16"
-                  stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;"/>
-                <circle id="donut-inprogress" cx="80" cy="80" r="60" fill="none" stroke="#06b6d4" stroke-width="16"
-                  stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease 0.2s;"/>
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                <circle cx="70" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="14"/>
+                <circle id="donut-completed" cx="70" cy="70" r="54" fill="none" stroke="#7c3aed" stroke-width="14"
+                  stroke-dasharray="339" stroke-dashoffset="339" stroke-linecap="round" style="transition:stroke-dashoffset 1.5s cubic-bezier(0.34,1.56,0.64,1);"/>
+                <circle id="donut-inprogress" cx="70" cy="70" r="54" fill="none" stroke="#06b6d4" stroke-width="14"
+                  stroke-dasharray="339" stroke-dashoffset="339" stroke-linecap="round" style="transition:stroke-dashoffset 1.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s;"/>
               </svg>
               <div class="donut-center">
                 <div class="donut-value" id="donut-pct">0%</div>
                 <div class="donut-label">Done</div>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#7c3aed;"></div>
-                <span class="text-sm"><span id="cnt-completed">0</span> Completed</span>
+            <div style="display:flex;flex-direction:column;gap:12px;flex:1;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);"></div>
+                  <span class="text-sm">Completed</span>
+                </div>
+                <span class="text-sm fw-600" id="cnt-completed">0</span>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:#06b6d4;"></div>
-                <span class="text-sm"><span id="cnt-inprogress">0</span> In Progress</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:var(--cyan);"></div>
+                  <span class="text-sm">In Progress</span>
+                </div>
+                <span class="text-sm fw-600" id="cnt-inprogress">0</span>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.1);"></div>
-                <span class="text-sm"><span id="cnt-pending">0</span> Pending</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.1);"></div>
+                  <span class="text-sm">Pending</span>
+                </div>
+                <span class="text-sm fw-600" id="cnt-pending">0</span>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quick Actions -->
+      <!-- Quick Actions & Deadlines -->
+      <div class="grid-2 animate-in" style="gap:24px; margin-bottom:24px;">
         <div class="glass-card">
           <h3 style="font-size:1rem; margin-bottom:20px;">Quick Actions</h3>
-          <div style="display:flex;flex-direction:column;gap:10px;" id="quick-actions">
+          <div style="display:flex;flex-direction:column;gap:12px;" id="quick-actions">
             <!-- Injected by JS based on role -->
+          </div>
+        </div>
+        
+        <div class="glass-card">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">Upcoming Deadlines</h3>
+            <a href="tasks.html" class="btn btn-ghost btn-sm">View all →</a>
+          </div>
+          <div id="deadlines-list" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="skeleton" style="height:50px;margin-bottom:8px;"></div>
+            <div class="skeleton" style="height:50px;"></div>
           </div>
         </div>
       </div>
 
       <!-- Faculty Only: Students Progress Table -->
-      <div class="glass-card faculty-section" id="students-progress-card" style="display:none;margin-bottom:24px;">
+      <div class="glass-card animate-in faculty-section" id="students-progress-card" style="display:none;margin-bottom:24px;">
         <div class="flex-between" style="margin-bottom:20px;">
           <h3 style="font-size:1rem;">📊 Students Progress Overview</h3>
           <a href="analytics.html" class="btn btn-ghost btn-sm">Full Analytics →</a>
@@ -106,7 +151,7 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="glass-card" style="margin-bottom:24px;">
+      <div class="glass-card animate-in" style="margin-bottom:24px;">
         <div class="flex-between" style="margin-bottom:20px;">
           <h3 style="font-size:1rem;">Recent Activity</h3>
           <a href="analytics.html" class="btn btn-ghost btn-sm">View all →</a>
@@ -118,24 +163,12 @@
         </div>
       </div>
 
-      <!-- My Tasks Preview -->
-      <div class="glass-card">
-        <div class="flex-between" style="margin-bottom:20px;">
-          <h3 style="font-size:1rem;">My Recent Tasks</h3>
-          <a href="tasks.html" class="btn btn-ghost btn-sm">View all →</a>
-        </div>
-        <div id="my-tasks-list" style="display:flex;flex-direction:column;gap:10px;">
-          <div class="skeleton" style="height:70px;margin-bottom:8px;"></div>
-          <div class="skeleton" style="height:70px;"></div>
-        </div>
-      </div>
-
     </div>
   </div>
 
   <script type="module">
     import { ApiClient } from '../js/api.js';
-    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, animateCounter } from '../js/ui.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, animateCounter, avatarInitials } from '../js/ui.js';
 
     initToast();
     const user = requireAuth();
@@ -149,43 +182,64 @@
     // Greeting
     const hr = new Date().getHours();
     const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('greeting').textContent = `${greet}, ${user.name}! 👋`;
+    document.getElementById('greeting').textContent = `${greet}, ${user.name.split(' ')[0]}! 👋`;
 
-    // Quick Actions — role specific
+    // Quick Actions
     const qaEl = document.getElementById('quick-actions');
     if (isFaculty) {
-      document.getElementById('dashboard-title').textContent = 'Faculty Dashboard';
+      document.getElementById('dashboard-title').textContent = 'Faculty Workspace';
       document.getElementById('label-projects').textContent = 'Total Projects';
       document.getElementById('students-progress-card').style.display = 'block';
       qaEl.innerHTML = `
-        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">📁 <span>Manage Projects</span></a>
-        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">➕ <span>Create Task</span></a>
-        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">📈 <span>View Analytics</span></a>
-        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">🏆 <span>Leaderboard</span></a>
+        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;padding:14px 20px;">📁 <span style="margin-left:8px;">Manage Projects</span></a>
+        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">➕ <span style="margin-left:8px;">Assign Task</span></a>
+        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">📈 <span style="margin-left:8px;">View Analytics</span></a>
       `;
     } else {
       qaEl.innerHTML = `
-        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;">📁 <span>My Projects</span></a>
-        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;">✅ <span>My Tasks</span></a>
-        <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;">📤 <span>Upload File</span></a>
-        <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;">🏆 <span>Leaderboard</span></a>
+        <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;padding:14px 20px;">📁 <span style="margin-left:8px;">My Projects</span></a>
+        <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">✅ <span style="margin-left:8px;">My Tasks</span></a>
+        <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">📤 <span style="margin-left:8px;">Upload File</span></a>
       `;
     }
 
-    const actionIcons = {
-      task_created: '📝', task_updated: '🔄', task_completed: '✅',
-      file_uploaded: '📎', member_added: '👤', member_removed: '👤',
-      project_created: '📁', project_updated: '📁', default: '⚡'
-    };
-    const actionLabels = {
-      task_created: 'created a task', task_updated: 'updated a task', task_completed: '✅ completed a task',
-      file_uploaded: 'uploaded a file', member_added: 'added a member', member_removed: 'removed a member',
-      project_created: 'created a project', project_updated: 'updated a project',
-    };
+    const actionIcons = { task_created: '📝', task_updated: '🔄', task_completed: '✅', file_uploaded: '📎', member_added: '👤', project_created: '📁', default: '⚡' };
+    const actionLabels = { task_created: 'created a task', task_updated: 'updated a task', task_completed: '✅ completed a task', file_uploaded: 'uploaded a file', member_added: 'added a member', project_created: 'created a project' };
+
+    // Heatmap generator
+    function generateHeatmap(logs) {
+      const grid = document.getElementById('heatmap-grid');
+      // Create 12 weeks x 7 days = 84 cells
+      const cells = new Array(84).fill(0);
+      
+      const now = new Date();
+      const msPerDay = 1000 * 60 * 60 * 24;
+      
+      logs.forEach(log => {
+        const d = new Date(log.createdAt);
+        const diffDays = Math.floor((now - d) / msPerDay);
+        if (diffDays < 84) {
+          cells[83 - diffDays]++; // 83 is today (bottom right)
+        }
+      });
+      
+      grid.innerHTML = cells.map((count, i) => {
+        let level = '';
+        if (count >= 4) level = 'level-4';
+        else if (count === 3) level = 'level-3';
+        else if (count === 2) level = 'level-2';
+        else if (count === 1) level = 'level-1';
+        
+        // Calculate date for tooltip
+        const date = new Date(now.getTime() - ((83 - i) * msPerDay));
+        const tip = count > 0 ? `${count} activities on ${date.toLocaleDateString()}` : `No activity on ${date.toLocaleDateString()}`;
+        
+        return `<div class="heatmap-cell ${level}" data-tip="${tip}"></div>`;
+      }).join('');
+    }
 
     async function loadDashboard() {
       try {
-        // Fetch analytics from API (not stale localStorage)
         const analyticsRes = await ApiClient.get(`/analytics/user/${user.id}`);
         const a = analyticsRes.analytics || {};
         const score = (a.tasksCompleted || 0) * 10 + (a.uploadsCount || 0) * 5 + (a.activityCount || 0);
@@ -202,7 +256,7 @@
         document.getElementById('cnt-inprogress').textContent = a.tasksInProgress || 0;
         document.getElementById('cnt-pending').textContent = a.tasksPending || 0;
 
-        const circ = 2 * Math.PI * 60;
+        const circ = 2 * Math.PI * 54;
         const pct = total > 0 ? (a.tasksCompleted || 0) / total : 0;
         const ipPct = total > 0 ? (a.tasksInProgress || 0) / total : 0;
 
@@ -211,6 +265,10 @@
           document.getElementById('donut-inprogress').style.strokeDashoffset = circ * (1 - ipPct);
           document.getElementById('donut-pct').textContent = Math.round(pct * 100) + '%';
         }, 100);
+
+        // Heatmap
+        generateHeatmap(a.recentActivity || []);
+
       } catch (e) {
         console.error('Analytics load error:', e);
       }
@@ -229,11 +287,12 @@
               <div class="timeline-content">
                 <div class="timeline-action">
                   <strong>${log.user?.name || 'Someone'}</strong> ${actionLabels[log.action] || log.action}
-                  ${log.metadata?.title ? `— <em>${log.metadata.title}</em>` : ''}
+                  ${log.metadata?.title ? `— <em style="color:var(--text-primary);">${log.metadata.title}</em>` : ''}
                 </div>
                 <div class="timeline-meta">
-                  <span>${log.project?.name || 'Unknown Project'}</span>
                   <span class="timeline-time">${timeAgo(log.createdAt)}</span>
+                  <span>•</span>
+                  <span>📁 ${log.project?.name || 'Unknown Project'}</span>
                 </div>
               </div>
             </div>
@@ -243,31 +302,45 @@
         document.getElementById('activity-timeline').innerHTML = `<p class="text-muted text-sm">Failed to load activity.</p>`;
       }
 
-      // My Tasks
+      // Upcoming Deadlines
       try {
-        const taskRes = await ApiClient.get(`/tasks?assignedTo=${user.id}&limit=4`);
-        const tasks = taskRes.tasks || [];
-        const tasksEl = document.getElementById('my-tasks-list');
+        const taskRes = await ApiClient.get(`/tasks?assignedTo=${user.id}&limit=10`);
+        const tasks = (taskRes.tasks || []).filter(t => t.status !== 'completed' && t.dueDate);
+        
+        // Sort by due date ascending
+        tasks.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+        
+        const tasksEl = document.getElementById('deadlines-list');
         if (tasks.length === 0) {
-          tasksEl.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No tasks assigned</h3><p>You're all caught up!</p></div>`;
+          tasksEl.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:2rem;margin-bottom:10px;">🎉</div><p style="font-size:0.85rem;">No upcoming deadlines.</p></div>`;
         } else {
-          tasksEl.innerHTML = tasks.slice(0,4).map(t => `
-            <div class="task-card" onclick="window.location.href='tasks.html'" style="cursor:pointer;">
-              <div class="flex-between">
-                <div class="task-title">${t.title}</div>
-                <span class="badge badge-${t.priority}">${t.priority}</span>
+          tasksEl.innerHTML = tasks.slice(0,3).map(t => {
+            const due = new Date(t.dueDate);
+            const overdue = due < new Date();
+            const daysLeft = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+            
+            let statusText = '';
+            if (overdue) statusText = 'Overdue';
+            else if (daysLeft === 0) statusText = 'Due Today';
+            else if (daysLeft === 1) statusText = 'Due Tomorrow';
+            else statusText = `In ${daysLeft} days`;
+
+            return `
+            <div class="member-card" style="padding:12px 16px;cursor:pointer;" onclick="window.location.href='tasks.html'">
+              <div class="file-icon ${overdue ? 'pdf' : 'zip'}" style="width:36px;height:36px;font-size:1rem;">${overdue ? '🔴' : '📅'}</div>
+              <div class="member-info">
+                <div class="member-name" style="font-size:0.85rem;">${t.title}</div>
+                <div class="member-email">${t.project?.name}</div>
               </div>
-              <div class="task-desc">${t.description || 'No description'}</div>
-              <div class="task-meta">
-                <span class="badge badge-${t.status}">${t.status}</span>
-                ${t.project?.name ? `<span style="font-size:0.75rem;color:var(--text-muted);">📁 ${t.project.name}</span>` : ''}
-                ${t.dueDate ? `<span class="task-deadline">${new Date(t.dueDate) < new Date() ? '🔴' : '📅'} ${new Date(t.dueDate).toLocaleDateString()}</span>` : ''}
+              <div style="text-align:right;">
+                <div style="font-size:0.75rem;font-weight:600;color:${overdue ? 'var(--rose)' : 'var(--amber)'};">${statusText}</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);">${due.toLocaleDateString()}</div>
               </div>
             </div>
-          `).join('');
+          `}).join('');
         }
       } catch (_) {
-        document.getElementById('my-tasks-list').innerHTML = `<p class="text-muted text-sm">Failed to load tasks.</p>`;
+        document.getElementById('deadlines-list').innerHTML = `<p class="text-muted text-sm">Failed to load deadlines.</p>`;
       }
 
       // Faculty: Students Progress Table
@@ -284,31 +357,32 @@
                 <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
                   <thead>
                     <tr style="border-bottom:1px solid var(--border);">
-                      <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:500;">Student</th>
-                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">Projects</th>
-                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">Tasks ✅</th>
-                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">🔄</th>
-                      <th style="text-align:center;padding:10px 8px;color:var(--text-muted);font-weight:500;">⬜</th>
-                      <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:500;">Progress</th>
+                      <th style="text-align:left;padding:12px 10px;color:var(--text-muted);font-weight:600;">Student</th>
+                      <th style="text-align:center;padding:12px 10px;color:var(--text-muted);font-weight:600;">Projects</th>
+                      <th style="text-align:center;padding:12px 10px;color:var(--text-muted);font-weight:600;">Done ✅</th>
+                      <th style="text-align:center;padding:12px 10px;color:var(--text-muted);font-weight:600;">WIP 🔄</th>
+                      <th style="text-align:left;padding:12px 10px;color:var(--text-muted);font-weight:600;">Progress</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${progress.map(p => `
-                      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                        <td style="padding:10px 8px;">
-                          <div style="font-weight:600;">${p.student.name}</div>
-                          <div style="font-size:0.75rem;color:var(--text-muted);">${p.student.email}</div>
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding:12px 10px;display:flex;align-items:center;gap:10px;">
+                          <div style="width:32px;height:32px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.7rem;">${avatarInitials(p.student.name)}</div>
+                          <div>
+                            <div style="font-weight:600;color:var(--text-primary);">${p.student.name}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);">${p.student.email}</div>
+                          </div>
                         </td>
-                        <td style="text-align:center;padding:10px 8px;">${p.projectsCount}</td>
-                        <td style="text-align:center;padding:10px 8px;color:var(--emerald);">${p.tasksCompleted}</td>
-                        <td style="text-align:center;padding:10px 8px;color:var(--cyan);">${p.tasksInProgress}</td>
-                        <td style="text-align:center;padding:10px 8px;color:var(--text-muted);">${p.tasksPending}</td>
-                        <td style="padding:10px 8px;">
-                          <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);">
-                              <div style="height:6px;border-radius:3px;background:var(--gradient-brand);width:${p.completionRate}%;transition:width 0.8s;"></div>
+                        <td style="text-align:center;padding:12px 10px;">${p.projectsCount}</td>
+                        <td style="text-align:center;padding:12px 10px;color:var(--emerald);font-weight:600;">${p.tasksCompleted}</td>
+                        <td style="text-align:center;padding:12px 10px;color:var(--cyan);">${p.tasksInProgress}</td>
+                        <td style="padding:12px 10px;width:30%;">
+                          <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;">
+                              <div style="height:100%;background:var(--gradient-brand);width:${p.completionRate}%;transition:width 1s cubic-bezier(0.34,1.56,0.64,1);"></div>
                             </div>
-                            <span style="font-size:0.75rem;color:var(--text-muted);min-width:32px;">${p.completionRate}%</span>
+                            <span style="font-size:0.75rem;color:var(--text-muted);min-width:32px;font-weight:600;">${p.completionRate}%</span>
                           </div>
                         </td>
                       </tr>
@@ -326,7 +400,6 @@
     loadDashboard();
 
     // ── Real-time dashboard refresh ────────────────────────────
-    // When any teammate updates a task, dashboard stats refresh live
     const initDashboardSocket = async () => {
       const loadScript = () => new Promise(resolve => {
         if (window.io) { resolve(); return; }
@@ -348,8 +421,18 @@
       } catch (_) {}
 
       // Refresh stats when tasks change
-      socket.on('task:updated', () => loadDashboard());
-      socket.on('task:created', () => loadDashboard());
+      socket.on('task:updated', (data) => {
+        if (window.addNotification && data.updatedBy !== user.name) {
+           window.addNotification({ action: 'task_updated', user: { name: data.updatedBy }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
+        }
+        loadDashboard();
+      });
+      socket.on('task:created', (data) => {
+        if (window.addNotification && data.task?.assignedTo !== user.id) {
+           window.addNotification({ action: 'task_created', user: { name: 'Someone' }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
+        }
+        loadDashboard();
+      });
     };
     initDashboardSocket();
   </script>

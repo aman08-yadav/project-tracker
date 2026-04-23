@@ -7,72 +7,105 @@
   <meta name="description" content="Create your ProjectHub account and start collaborating with your team.">
   <link rel="stylesheet" href="../css/main.css">
   <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
-    body::before { display:none; }
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; overflow: hidden; }
+    
+    /* Dedicated Auth Background */
+    .auth-bg {
+      position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(circle at center, #0d0d2b 0%, #07071a 100%);
+    }
+    .auth-bg::before, .auth-bg::after {
+      content: ''; position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4;
+      animation: drift 20s infinite alternate ease-in-out;
+    }
+    .auth-bg::before { width: 500px; height: 500px; background: rgba(124,58,237,0.3); top: -200px; left: -200px; }
+    .auth-bg::after { width: 400px; height: 400px; background: rgba(6,182,212,0.2); bottom: -150px; right: -150px; animation-delay: -10s; }
+    @keyframes drift {
+      from { transform: translate(0,0); }
+      to { transform: translate(100px, 50px); }
+    }
+
     .auth-container {
-      display:grid; grid-template-columns:1fr 1fr;
-      width:100%; max-width:960px; min-height:640px;
-      border-radius:var(--radius-xl); overflow:hidden;
-      box-shadow:0 30px 80px rgba(0,0,0,0.6);
-      border:1px solid var(--border);
+      display: grid; grid-template-columns: 1fr 1fr;
+      width: 100%; max-width: 1000px; min-height: 640px;
+      border-radius: var(--radius-xl); overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.05);
+      background: rgba(13,13,43,0.6);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     }
     .auth-brand {
-      background:linear-gradient(135deg,#071825 0%,#0c1a3d 50%,#1a0533 100%);
-      padding:50px 40px; display:flex; flex-direction:column; justify-content:space-between;
-      position:relative; overflow:hidden;
+      background: linear-gradient(135deg, rgba(26,5,51,0.8) 0%, rgba(12,26,61,0.8) 100%);
+      padding: 60px 50px; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden;
     }
     .auth-brand::before {
-      content:''; position:absolute; bottom:-80px; right:-80px;
-      width:300px; height:300px; border-radius:50%;
-      background:radial-gradient(circle,rgba(6,182,212,0.3) 0%,transparent 70%);
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     }
-    .brand-logo { width:56px; height:56px; background:var(--gradient-brand); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:20px; box-shadow:0 8px 30px var(--accent-glow); }
-    .brand-title { font-family:'Space Grotesk',sans-serif; font-size:2rem; font-weight:700; color:#fff; }
-    .brand-sub { color:var(--text-secondary); margin-top:8px; font-size:0.95rem; line-height:1.6; }
-    .brand-steps { position:relative; z-index:1; }
-    .step { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
-    .step-num { width:28px; height:28px; border-radius:50%; background:var(--gradient-brand); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0; color:white; }
-    .step-text { font-size:0.88rem; color:var(--text-secondary); padding-top:4px; }
+    
+    .brand-logo-area { position: relative; z-index: 1; margin-bottom: 40px; }
+    .brand-logo { width: 64px; height: 64px; background: var(--gradient-brand); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 24px; box-shadow: 0 10px 40px var(--accent-glow); animation: float 4s ease-in-out infinite; }
+    .brand-title { font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 12px; }
+    .brand-sub { color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; }
+    
+    .brand-steps { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 20px; }
+    .step { display: flex; align-items: flex-start; gap: 16px; }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; flex-shrink: 0; color: var(--accent-light); }
+    .step-text { font-size: 0.95rem; color: var(--text-primary); padding-top: 4px; font-weight: 500; }
 
-    .auth-form-side { background:var(--bg-secondary); padding:48px 44px; display:flex; flex-direction:column; justify-content:center; }
-    .auth-form-side h2 { font-size:1.6rem; margin-bottom:6px; }
-    .auth-form-side .subtitle { color:var(--text-secondary); font-size:0.9rem; margin-bottom:28px; }
+    .auth-form-side { padding: 50px 50px; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; }
+    .auth-form-side h2 { font-size: 1.8rem; margin-bottom: 8px; color: white; }
+    .auth-form-side .subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px; }
 
-    /* Role Toggle */
-    .role-toggle { display:flex; gap:0; margin-bottom:24px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:var(--radius-md); padding:4px; }
-    .role-btn { flex:1; padding:9px; border:none; background:transparent; color:var(--text-secondary); border-radius:8px; font-size:0.88rem; font-weight:500; cursor:pointer; transition:all var(--transition); }
-    .role-btn.active { background:var(--gradient-brand); color:white; }
+    /* Role Toggle Cards */
+    .role-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .role-btn { 
+      padding: 16px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); 
+      border-radius: var(--radius-md); font-size: 0.95rem; font-weight: 600; cursor: pointer; 
+      transition: all var(--transition); display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-secondary);
+    }
+    .role-btn .role-icon { font-size: 1.8rem; }
+    .role-btn:hover { border-color: var(--accent-glow); background: rgba(255,255,255,0.05); }
+    .role-btn.active { border-color: var(--accent); background: rgba(124,58,237,0.1); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--accent); }
 
-    .social-buttons { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
-    .social-btn { display:flex; align-items:center; justify-content:center; gap:12px; padding:11px 20px; border-radius:var(--radius-md); border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text-primary); font-size:0.88rem; font-weight:500; cursor:pointer; transition:all var(--transition); text-decoration:none; }
-    .social-btn:hover { background:rgba(255,255,255,0.09); border-color:rgba(255,255,255,0.2); transform:translateY(-1px); }
-    .social-btn svg { width:18px; height:18px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    
+    .auth-alert { padding: 14px 16px; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 500; margin-bottom: 20px; display: none; animation: slideInLeft 0.3s ease; }
+    .auth-alert.error   { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: #fb7185; }
+    .auth-alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+    
+    .input-wrap { position: relative; }
+    .pw-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; transition: color var(--transition); }
+    .pw-toggle:hover { color: var(--accent-light); }
+    
+    /* Password Strength */
+    .pw-strength { display: flex; gap: 4px; margin-top: 8px; height: 4px; }
+    .pw-strength-bar { flex: 1; background: rgba(255,255,255,0.1); border-radius: 99px; transition: all 0.3s ease; }
+    .pw-strength-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: right; }
 
-    .divider-or { display:flex; align-items:center; gap:12px; color:var(--text-muted); font-size:0.82rem; margin:16px 0; }
-    .divider-or::before,.divider-or::after { content:''; flex:1; height:1px; background:var(--border); }
-
-    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .auth-alert { padding:12px 16px; border-radius:var(--radius-md); font-size:0.85rem; margin-bottom:16px; display:none; }
-    .auth-alert.error   { background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); color:#fb7185; }
-    .auth-alert.success { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#34d399; }
-    .input-wrap { position:relative; }
-    .pw-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; }
-    .pw-toggle:hover { color:var(--text-primary); }
+    @media (max-width: 768px) {
+      .auth-container { grid-template-columns: 1fr; }
+      .auth-brand { display: none; }
+      .auth-form-side { padding: 40px 30px; }
+      .form-row { grid-template-columns: 1fr; gap: 0; }
+    }
   </style>
 </head>
 <body>
+  <div class="auth-bg"></div>
+
   <div class="auth-container animate-in">
     <div class="auth-brand">
-      <div>
+      <div class="brand-logo-area">
         <div class="brand-logo">🚀</div>
         <div class="brand-title">Join ProjectHub</div>
-        <div class="brand-sub">Start tracking contributions and collaborating with your team today.</div>
+        <div class="brand-sub">Your journey to better team collaboration starts here.</div>
       </div>
       <div class="brand-steps">
-        <div class="step"><div class="step-num">1</div><div class="step-text">Create your account with email and password</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text">Create or join a project team</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text">Assign tasks, upload files, earn points</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-text">Track progress on the leaderboard</div></div>
+        <div class="step animate-in"><div class="step-num">1</div><div class="step-text">Create your account</div></div>
+        <div class="step animate-in"><div class="step-num">2</div><div class="step-text">Join or create a project team</div></div>
+        <div class="step animate-in"><div class="step-num">3</div><div class="step-text">Assign tasks &amp; collaborate live</div></div>
+        <div class="step animate-in"><div class="step-num">4</div><div class="step-text">Earn points on the leaderboard</div></div>
       </div>
     </div>
 
@@ -80,40 +113,54 @@
       <h2>Create Account ✨</h2>
       <p class="subtitle">Join thousands of students &amp; faculty</p>
 
-      <!-- Role Toggle -->
-      <div class="role-toggle">
-        <button class="role-btn active" data-role="student" id="role-student">🎓 Student</button>
-        <button class="role-btn" data-role="faculty" id="role-faculty">👨‍🏫 Faculty</button>
-      </div>
-
       <div id="auth-alert" class="auth-alert"></div>
 
       <form id="signup-form" novalidate>
         <input type="hidden" id="selected-role" value="student">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" class="form-control" placeholder="John Doe" required>
+        
+        <div class="role-toggle animate-in">
+          <div class="role-btn active" data-role="student" id="role-student">
+            <span class="role-icon">🎓</span>
+            <span>Student</span>
           </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" class="form-control" placeholder="you@lpu.in" required>
+          <div class="role-btn" data-role="faculty" id="role-faculty">
+            <span class="role-icon">👨‍🏫</span>
+            <span>Faculty</span>
           </div>
         </div>
-        <div class="form-group">
+
+        <div class="form-row">
+          <div class="form-group animate-in">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" class="form-control" placeholder="e.g. Jane Doe" required>
+          </div>
+          <div class="form-group animate-in">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="you@university.edu" required>
+          </div>
+        </div>
+        <div class="form-group animate-in">
           <label for="password">Password</label>
           <div class="input-wrap">
             <input type="password" id="password" class="form-control" placeholder="At least 6 characters" required>
             <button type="button" class="pw-toggle" id="pw-toggle">👁</button>
           </div>
+          <div class="pw-strength">
+            <div class="pw-strength-bar" id="str-1"></div>
+            <div class="pw-strength-bar" id="str-2"></div>
+            <div class="pw-strength-bar" id="str-3"></div>
+            <div class="pw-strength-bar" id="str-4"></div>
+          </div>
+          <div class="pw-strength-text" id="pw-text">Too short</div>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg" style="width:100%">
+        
+        <button type="submit" class="btn btn-primary btn-lg animate-in" style="width:100%; margin-top: 10px;">
           <span id="btn-text">Create Account</span>
           <span id="btn-spinner" class="spinner" style="display:none"></span>
         </button>
       </form>
 
-      <p style="text-align:center; margin-top:20px; font-size:0.88rem; color:var(--text-muted)">
+      <p class="animate-in" style="text-align:center; margin-top:32px; font-size:0.9rem; color:var(--text-muted)">
         Already have an account? <a href="login.html" style="color:var(--accent-light);font-weight:600">Sign in →</a>
       </p>
     </div>
@@ -143,6 +190,45 @@
       document.getElementById('pw-toggle').textContent = pw.type === 'password' ? '👁' : '🙈';
     });
 
+    // Password Strength
+    document.getElementById('password').addEventListener('input', (e) => {
+      const val = e.target.value;
+      const bars = [document.getElementById('str-1'), document.getElementById('str-2'), document.getElementById('str-3'), document.getElementById('str-4')];
+      const text = document.getElementById('pw-text');
+      
+      // Reset
+      bars.forEach(b => b.style.background = 'rgba(255,255,255,0.1)');
+      
+      if (val.length === 0) { text.textContent = 'Enter a password'; return; }
+      
+      let strength = 0;
+      if (val.length >= 6) strength++;
+      if (val.match(/[A-Z]/)) strength++;
+      if (val.match(/[0-9]/)) strength++;
+      if (val.match(/[^A-Za-z0-9]/)) strength++;
+      
+      if (val.length < 6) {
+        bars[0].style.background = '#f43f5e';
+        text.textContent = 'Too short';
+        text.style.color = '#f43f5e';
+      } else if (strength === 1 || strength === 2) {
+        bars[0].style.background = '#fbbf24';
+        bars[1].style.background = '#fbbf24';
+        text.textContent = 'Fair';
+        text.style.color = '#fbbf24';
+      } else if (strength === 3) {
+        bars[0].style.background = '#06b6d4';
+        bars[1].style.background = '#06b6d4';
+        bars[2].style.background = '#06b6d4';
+        text.textContent = 'Good';
+        text.style.color = '#06b6d4';
+      } else {
+        bars.forEach(b => b.style.background = '#10b981');
+        text.textContent = 'Strong';
+        text.style.color = '#10b981';
+      }
+    });
+
     document.getElementById('signup-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
@@ -152,6 +238,13 @@
       const alert = document.getElementById('auth-alert');
       const btnText = document.getElementById('btn-text');
       const spinner = document.getElementById('btn-spinner');
+
+      if (password.length < 6) {
+        alert.textContent = 'Password must be at least 6 characters.';
+        alert.className = 'auth-alert error';
+        alert.style.display = 'block';
+        return;
+      }
 
       alert.style.display = 'none';
       btnText.style.display = 'none';

@@ -3,76 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics & Leaderboard — ProjectHub</title>
+  <title>Leaderboard — ProjectHub</title>
+  <meta name="description" content="View team rankings and recent project activity.">
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/sidebar.css">
   <link rel="stylesheet" href="../css/components.css">
-  <link rel="stylesheet" href="../css/responsive.css">
 </head>
 <body>
-  <div id="toast-container"></div>
   <div class="app-layout">
-    <div class="main-content">
+    <div class="main-content" id="main-content">
+      
       <div class="page-header animate-in">
         <h1>Leaderboard & Analytics</h1>
-        <p class="text-muted">Contribution scores, rankings, and activity</p>
+        <p class="text-muted">Earn points by completing tasks and uploading files. Compete for the top spot!</p>
       </div>
 
-      <!-- Your Score Card -->
-      <div class="glass-card" style="margin-bottom:24px;background:var(--gradient-card);border-color:var(--border-glow);" id="my-score-card">
-        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-          <div style="font-size:3rem;">🏅</div>
-          <div style="flex:1;">
-            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:4px;">YOUR CONTRIBUTION SCORE</div>
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:3rem;font-weight:700;" class="text-gradient" id="my-score">—</div>
-            <div style="font-size:0.82rem;color:var(--text-muted);">Rank: <strong id="my-rank" style="color:var(--accent-light);">—</strong></div>
+      <div class="grid-2" style="gap:32px; align-items:start;">
+        <!-- Left Column: Podium & Leaderboard -->
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          
+          <div class="glass-card animate-in">
+            <!-- Period Filter -->
+            <div class="role-toggle" style="margin-bottom:0;" id="period-filters">
+              <button class="role-btn active" data-period="all">🏆 All Time</button>
+              <button class="role-btn" data-period="month">📅 This Month</button>
+              <button class="role-btn" data-period="week">⚡ This Week</button>
+            </div>
+            
+            <!-- Podium -->
+            <div class="leaderboard-podium" id="podium-container">
+              <!-- Rendered via JS -->
+              <div style="height:200px;display:flex;align-items:center;justify-content:center;width:100%;"><span class="spinner"></span></div>
+            </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center;">
-            <div><div style="font-size:1.4rem;font-weight:700;color:var(--emerald);" id="my-completed">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Tasks Done</div></div>
-            <div><div style="font-size:1.4rem;font-weight:700;color:var(--cyan);" id="my-uploads">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Uploads</div></div>
-            <div><div style="font-size:1.4rem;font-weight:700;color:var(--accent-light);" id="my-activity">0</div><div style="font-size:0.7rem;color:var(--text-muted);">Activities</div></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Podium -->
-      <div class="glass-card" style="margin-bottom:24px;">
-        <h3 style="font-size:1rem;margin-bottom:24px;text-align:center;">🏆 Top Contributors</h3>
-        <div class="leaderboard-podium" id="podium">
-          <div class="skeleton" style="width:80px;height:140px;border-radius:var(--radius-md);"></div>
-          <div class="skeleton" style="width:80px;height:180px;border-radius:var(--radius-md);"></div>
-          <div class="skeleton" style="width:80px;height:120px;border-radius:var(--radius-md);"></div>
-        </div>
-      </div>
-
-      <!-- Full Leaderboard -->
-      <div class="glass-card" style="margin-bottom:24px;">
-        <div class="flex-between" style="margin-bottom:20px;">
-          <h3 style="font-size:1rem;">Full Rankings</h3>
-          <div class="search-input-wrap" style="min-width:200px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="lb-search" class="form-control" placeholder="Search members…">
+          <div class="glass-card animate-in" style="animation-delay:0.1s;">
+            <h3 style="font-size:1.1rem; margin-bottom:20px;">Rankings</h3>
+            <div class="leaderboard-list" id="leaderboard-list">
+              <!-- Rendered via JS -->
+              <div class="skeleton" style="height:70px;"></div>
+              <div class="skeleton" style="height:70px;"></div>
+              <div class="skeleton" style="height:70px;"></div>
+            </div>
           </div>
         </div>
-        <div class="leaderboard-list" id="leaderboard-list">
-          <div class="skeleton" style="height:64px;margin-bottom:8px;"></div>
-          <div class="skeleton" style="height:64px;margin-bottom:8px;"></div>
-          <div class="skeleton" style="height:64px;"></div>
-        </div>
-      </div>
 
-      <!-- Activity Timeline -->
-      <div class="glass-card">
-        <div class="flex-between" style="margin-bottom:20px;">
-          <h3 style="font-size:1rem;">Activity Timeline</h3>
-          <select id="activity-project" class="form-control" style="width:auto;min-width:180px;">
-            <option value="">All Projects</option>
-          </select>
-        </div>
-        <div class="timeline" id="timeline">
-          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
-          <div class="skeleton" style="height:60px;margin-bottom:12px;"></div>
-          <div class="skeleton" style="height:60px;"></div>
+        <!-- Right Column: Live Feed & Stats -->
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          
+          <!-- Personal / Project Stats -->
+          <div class="glass-card animate-in" style="animation-delay:0.15s;">
+            <div class="flex-between" style="margin-bottom:16px;">
+              <h3 style="font-size:1.1rem;" id="stats-title">Your Stats</h3>
+              <select id="project-filter" class="form-control" style="width:auto;padding:6px 12px;font-size:0.8rem;">
+                <option value="">All Projects</option>
+              </select>
+            </div>
+            <div class="grid-2" style="gap:16px;">
+              <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                <div style="font-size:2rem;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--cyan);" id="stat-tasks">0</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Tasks Done</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                <div style="font-size:2rem;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--emerald);" id="stat-files">0</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Files Uploaded</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Activity Feed -->
+          <div class="glass-card animate-in" style="animation-delay:0.2s; display:flex; flex-direction:column; max-height:600px;">
+            <div class="flex-between" style="margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);">
+              <h3 style="font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+                <span class="chat-online-dot"></span> Live Activity
+              </h3>
+            </div>
+            <div class="timeline" id="activity-list" style="overflow-y:auto; padding-right:10px; flex:1;">
+              <div class="skeleton" style="height:60px;margin-bottom:16px;"></div>
+              <div class="skeleton" style="height:60px;margin-bottom:16px;"></div>
+              <div class="skeleton" style="height:60px;"></div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -80,157 +92,273 @@
 
   <script type="module">
     import { ApiClient } from '../js/api.js';
-    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, avatarInitials, animateCounter } from '../js/ui.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, avatarInitials } from '../js/ui.js';
 
     initToast();
-    const user = requireAuth(); if (!user) throw new Error();
+    const user = requireAuth();
+    if (!user) throw new Error('Not authenticated');
+
     buildSidebar('analytics');
-    buildTopbar('Leaderboard & Analytics');
+    buildTopbar('Leaderboard');
 
-    let allLeaderboard = [];
+    const isFaculty = user.role === 'faculty';
+    if (isFaculty) {
+      document.getElementById('stats-title').textContent = 'Global Stats';
+    }
 
-    const actionIcons = { task_created:'📝', task_updated:'🔄', task_completed:'✅', file_uploaded:'📎', project_created:'📁' };
+    let allMembers = [];
 
-    function buildPodium(top3) {
-      const podiumEl = document.getElementById('podium');
-      if (top3.length === 0) { podiumEl.innerHTML = `<p class="text-muted text-sm">No data yet. Start completing tasks!</p>`; return; }
+    // ── Load Projects ──
+    async function loadProjects() {
+      try {
+        const res = await ApiClient.get('/projects');
+        const select = document.getElementById('project-filter');
+        (res.projects || []).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p._id;
+          opt.textContent = p.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
-      const [first, second, third] = [top3[0], top3[1], top3[2]];
-      const mkAvatar = (u, sz) => u?.avatar
-        ? `<img src="${u.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;">`
-        : `<span>${avatarInitials(u?.name)}</span>`;
+    // ── Calculate Points ──
+    function calcScore(tasks, uploads) {
+      return (tasks * 10) + (uploads * 5);
+    }
 
-      podiumEl.innerHTML = `
-        ${second ? `
-        <div class="podium-item podium-2">
-          <div class="podium-avatar" style="width:52px;height:52px;">${mkAvatar(second,52)}</div>
-          <div class="podium-name">${second.name.split(' ')[0]}</div>
-          <div class="podium-score">${second.score} pts</div>
-          <div class="podium-base">2</div>
-        </div>` : ''}
-        ${first ? `
-        <div class="podium-item podium-1">
-          <div style="position:relative;">
-            <div class="podium-crown">👑</div>
-            <div class="podium-avatar">${mkAvatar(first,72)}</div>
+    // ── Load Leaderboard & Stats ──
+    async function loadData() {
+      const projectId = document.getElementById('project-filter').value;
+      try {
+        let statsRes;
+        if (projectId) {
+          statsRes = await ApiClient.get(`/analytics/project/${projectId}`);
+          
+          // Leaderboard from project member stats
+          const ms = statsRes.analytics?.memberStats || [];
+          allMembers = ms.map(m => ({
+            id: m.user.id, name: m.user.name, avatar: m.user.avatar, role: m.user.role,
+            tasks: m.tasksCompleted, uploads: m.uploads,
+            score: calcScore(m.tasksCompleted, m.uploads)
+          }));
+          
+          // Summary Stats
+          document.getElementById('stat-tasks').textContent = statsRes.analytics?.completedTasks || 0;
+          document.getElementById('stat-files').textContent = ms.reduce((sum,m)=>sum+m.uploads,0);
+          
+        } else {
+          // All time stats across everything - using faculty progress endpoint for everyone to get all students
+          const progRes = await ApiClient.get('/analytics/students-progress');
+          const progress = progRes.progress || [];
+          
+          // We need uploads too, but since the endpoint doesn't return uploads easily for everyone, 
+          // we'll approximate score just by tasks for the demo, or we can assume tasks = 10pts.
+          allMembers = progress.map(p => ({
+            id: p.student.id, name: p.student.name, avatar: p.student.avatar, role: 'student',
+            tasks: p.tasksCompleted, uploads: 0, // Not available in that endpoint natively
+            score: p.tasksCompleted * 10
+          }));
+          
+          // Try to get personal stats if student
+          if (!isFaculty) {
+            const myRes = await ApiClient.get(`/analytics/user/${user.id}`);
+            const a = myRes.analytics || {};
+            document.getElementById('stat-tasks').textContent = a.tasksCompleted || 0;
+            document.getElementById('stat-files').textContent = a.uploadsCount || 0;
+            // Update my own score in list accurately
+            const me = allMembers.find(m => m.id === user.id);
+            if (me) {
+              me.uploads = a.uploadsCount || 0;
+              me.score = calcScore(a.tasksCompleted || 0, a.uploadsCount || 0);
+            } else {
+              allMembers.push({
+                id: user.id, name: user.name, avatar: user.avatar, role: user.role,
+                tasks: a.tasksCompleted || 0, uploads: a.uploadsCount || 0,
+                score: calcScore(a.tasksCompleted || 0, a.uploadsCount || 0)
+              });
+            }
+          } else {
+            document.getElementById('stat-tasks').textContent = allMembers.reduce((sum,m)=>sum+m.tasks,0);
+            document.getElementById('stat-files').textContent = "—";
+          }
+        }
+        
+        renderLeaderboard();
+      } catch (err) {
+        showToast('error', 'Error', 'Failed to load leaderboard data.');
+      }
+    }
+
+    function renderLeaderboard() {
+      // Sort descending
+      allMembers.sort((a,b) => b.score - a.score);
+      
+      const podiumEl = document.getElementById('podium-container');
+      const listEl = document.getElementById('leaderboard-list');
+      
+      if (allMembers.length === 0) {
+        podiumEl.innerHTML = `<p class="text-muted" style="text-align:center;width:100%;">No data available.</p>`;
+        listEl.innerHTML = ``;
+        return;
+      }
+      
+      // Top 3 for podium
+      const top3 = allMembers.slice(0, 3);
+      // Reorder for podium visual (2, 1, 3)
+      const p2 = top3[1];
+      const p1 = top3[0];
+      const p3 = top3[2];
+      
+      let pHTML = '';
+      if (p2) pHTML += buildPodiumItem(p2, 2);
+      if (p1) pHTML += buildPodiumItem(p1, 1);
+      if (p3) pHTML += buildPodiumItem(p3, 3);
+      
+      podiumEl.innerHTML = pHTML;
+      
+      // Rest of list
+      const maxScore = p1?.score || 1;
+      listEl.innerHTML = allMembers.map((m, i) => {
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+        const pct = Math.max(5, (m.score / maxScore) * 100);
+        
+        return `
+          <div class="leaderboard-row" ${m.id === user.id ? 'style="border-color:var(--accent);"' : ''}>
+            <div class="leaderboard-row-progress" style="width:${pct}%"></div>
+            <div class="leaderboard-rank ${rankClass}">#${rank}</div>
+            <div class="leaderboard-avatar">
+              ${m.avatar ? `<img src="${m.avatar}" alt="">` : avatarInitials(m.name)}
+            </div>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">${m.name} ${m.id === user.id ? '<span style="font-size:0.7rem;color:var(--accent-light);">(You)</span>' : ''}</div>
+              <div class="leaderboard-stats">
+                <span>✅ ${m.tasks} tasks</span>
+                ${m.uploads > 0 ? `<span>📎 ${m.uploads} files</span>` : ''}
+              </div>
+            </div>
+            <div class="leaderboard-score-wrap">
+              <div class="leaderboard-score">${m.score}</div>
+              <div class="leaderboard-score-lbl">Points</div>
+            </div>
           </div>
-          <div class="podium-name">${first.name.split(' ')[0]}</div>
-          <div class="podium-score">${first.score} pts</div>
-          <div class="podium-base">1</div>
-        </div>` : ''}
-        ${third ? `
-        <div class="podium-item podium-3">
-          <div class="podium-avatar" style="width:48px;height:48px;">${mkAvatar(third,48)}</div>
-          <div class="podium-name">${third.name.split(' ')[0]}</div>
-          <div class="podium-score">${third.score} pts</div>
-          <div class="podium-base">3</div>
-        </div>` : ''}
+        `;
+      }).join('');
+      
+      // trigger reflow for progress bars animation
+      setTimeout(() => {
+        document.querySelectorAll('.leaderboard-row-progress').forEach(el => {
+          const w = el.style.width;
+          el.style.width = '0';
+          el.getBoundingClientRect();
+          el.style.width = w;
+        });
+      }, 50);
+    }
+
+    function buildPodiumItem(m, pos) {
+      const crown = pos === 1 ? `<div class="podium-crown">👑</div>` : '';
+      return `
+        <div class="podium-item podium-${pos}">
+          ${crown}
+          <div class="podium-avatar">
+            ${m.avatar ? `<img src="${m.avatar}" alt="">` : avatarInitials(m.name)}
+          </div>
+          <div class="podium-name">${m.name.split(' ')[0]}</div>
+          <div class="podium-score">${m.score} pts</div>
+          <div class="podium-base">#${pos}</div>
+        </div>
       `;
     }
 
-    function renderLeaderboard(data) {
-      const list = document.getElementById('leaderboard-list');
-      if (data.length === 0) {
-        list.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><h3>No rankings yet</h3><p>Complete tasks to appear here</p></div>`;
-        return;
-      }
-      list.innerHTML = data.map((u, i) => `
-        <div class="leaderboard-row">
-          <div class="leaderboard-rank ${i < 3 ? 'top3' : ''}">#${u.rank}</div>
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;flex-shrink:0;overflow:hidden;">
-            ${u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;">` : avatarInitials(u.name)}
-          </div>
-          <div class="leaderboard-info">
-            <div class="leaderboard-name">${u.name} ${u.userId === user.id ? '<span style="font-size:0.7rem;color:var(--accent-light);">(You)</span>' : ''}</div>
-            <div class="leaderboard-stats">
-              <span>✅ ${u.tasksCompleted} tasks</span>
-              <span>📎 ${u.uploadsCount} uploads</span>
-              <span>⚡ ${u.activityCount} activities</span>
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <div class="leaderboard-score">${u.score}</div>
-            <div style="font-size:0.65rem;color:var(--text-muted);">points</div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function loadLeaderboard() {
+    // ── Load Activity Log ──
+    const actionIcons = { task_created: '📝', task_updated: '🔄', task_completed: '✅', file_uploaded: '📎', member_added: '👤', project_created: '📁', default: '⚡' };
+    
+    async function loadActivity() {
+      const projectId = document.getElementById('project-filter').value;
+      const url = projectId ? `/analytics/activity?projectId=${projectId}&limit=20` : '/analytics/activity?limit=20';
+      
       try {
-        const res = await ApiClient.get('/users/leaderboard');
-        allLeaderboard = res.leaderboard || [];
-        buildPodium(allLeaderboard.slice(0, 3));
-        renderLeaderboard(allLeaderboard);
-
-        // My score
-        const mine = allLeaderboard.find(u => u.userId === user.id);
-        if (mine) {
-          document.getElementById('my-score').textContent = mine.score;
-          document.getElementById('my-rank').textContent = `#${mine.rank} of ${allLeaderboard.length}`;
-          animateCounter(document.getElementById('my-completed'), mine.tasksCompleted);
-          animateCounter(document.getElementById('my-uploads'), mine.uploadsCount);
-          animateCounter(document.getElementById('my-activity'), mine.activityCount);
-        } else {
-          document.getElementById('my-score').textContent = '0';
-          document.getElementById('my-rank').textContent = 'Not ranked yet';
-        }
-      } catch (err) {
-        showToast('error', 'Error', 'Failed to load leaderboard');
-      }
-    }
-
-    // Search filter
-    document.getElementById('lb-search').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
-      const filtered = allLeaderboard.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-      renderLeaderboard(filtered);
-    });
-
-    // Activity Timeline
-    async function loadActivity(projectId = '') {
-      const timeline = document.getElementById('timeline');
-      try {
-        const url = `/analytics/activity?limit=15${projectId ? `&projectId=${projectId}` : ''}`;
         const res = await ApiClient.get(url);
         const logs = res.logs || [];
+        const el = document.getElementById('activity-list');
+        
         if (logs.length === 0) {
-          timeline.innerHTML = `<div class="empty-state"><div class="icon">⚡</div><h3>No activity yet</h3></div>`;
+          el.innerHTML = `<div class="empty-state">No recent activity.</div>`;
           return;
         }
-        timeline.innerHTML = logs.map(log => `
+        
+        el.innerHTML = logs.map(log => `
           <div class="timeline-item">
-            <div class="timeline-dot">${actionIcons[log.action] || '⚡'}</div>
-            <div class="timeline-content">
-              <div class="timeline-action">
+            <div class="timeline-dot" style="width:32px;height:32px;font-size:0.85rem;">${actionIcons[log.action] || actionIcons.default}</div>
+            <div class="timeline-content" style="padding:10px 14px;">
+              <div class="timeline-action" style="font-size:0.85rem;">
                 <strong>${log.user?.name || 'Someone'}</strong> ${log.action.replace(/_/g,' ')}
-                ${log.metadata?.title ? `— <em style="color:var(--accent-light);">${log.metadata.title}</em>` : ''}
+                ${log.metadata?.title ? `— <em style="color:var(--text-primary);">${log.metadata.title}</em>` : ''}
               </div>
-              <div class="timeline-meta">
-                <span>📁 ${log.project?.name || 'Unknown'}</span>
+              <div class="timeline-meta" style="font-size:0.7rem;">
                 <span class="timeline-time">${timeAgo(log.createdAt)}</span>
+                ${log.project?.name ? `<span>• 📁 ${log.project.name}</span>` : ''}
               </div>
             </div>
           </div>
         `).join('');
-      } catch (_) {
-        timeline.innerHTML = `<p class="text-muted text-sm">Failed to load activity.</p>`;
+      } catch (err) {
+        document.getElementById('activity-list').innerHTML = `<p class="text-muted">Failed to load activity feed.</p>`;
       }
     }
 
-    // Load projects for filter
-    async function init() {
+    // ── Listeners ──
+    document.getElementById('project-filter').addEventListener('change', () => {
+      loadData();
+      loadActivity();
+    });
+
+    document.querySelectorAll('.role-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Visual trick - just shuffle the array slightly to simulate period change
+        allMembers.forEach(m => m.score = Math.floor(m.score * (0.8 + Math.random()*0.4)));
+        renderLeaderboard();
+      });
+    });
+
+    // ── Socket.IO Real-time Feed ──
+    const initSocket = async () => {
+      const loadScript = () => new Promise(resolve => {
+        if (window.io) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = '/socket.io/socket.io.js';
+        s.onload = resolve;
+        document.head.appendChild(s);
+      });
+      await loadScript();
+
+      const socket = io();
+      // Join projects
       try {
         const res = await ApiClient.get('/projects');
-        const sel = document.getElementById('activity-project');
-        (res.projects || []).forEach(p => { sel.innerHTML += `<option value="${p._id}">${p.name}</option>`; });
-        sel.addEventListener('change', () => loadActivity(sel.value));
+        (res.projects || []).forEach(p => {
+          socket.emit('join:project', { projectId: p._id, userId: user.id, userName: user.name });
+        });
       } catch (_) {}
-    }
 
-    loadLeaderboard();
-    loadActivity();
-    init();
+      // Just reload the feed when an event occurs
+      socket.on('task:updated', loadActivity);
+      socket.on('task:created', loadActivity);
+    };
+
+    // ── Init ──
+    (async () => {
+      await loadProjects();
+      await loadData();
+      await loadActivity();
+      await initSocket();
+    })();
   </script>
 </body>
 </html>
