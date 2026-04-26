@@ -53,7 +53,7 @@ MongoDB (Local or Atlas)
 PostgreSQL (or Neon Database)
 Installation
 Clone the repository
-git clone https://github.com/yourusername/project-tracker.git
+git clone https://github.com/aman08-yadav/project-tracker.git
 cd project-tracker
 Install Server Dependencies
 cd server
