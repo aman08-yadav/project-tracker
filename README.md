@@ -1,4 +1,7 @@
 🚀 ProjectHub
+
+
+
 Team Contribution Tracking System
 
 A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.
@@ -7,6 +10,9 @@ A Full-Stack Web Application developed for transparent, real-time collaboration 
 Node.js Express.js MongoDB PostgreSQL Socket.io
 
 📖 About The Project
+
+
+
 In academic and professional group projects, evaluating individual contributions is traditionally subjective and opaque. Often, a minority of students perform the majority of the work, yet all group members receive identical evaluations.
 
 ProjectHub solves this by providing a unified workspace where students manage tasks, upload files, and chat in real-time. Crucially, the system silently monitors every action—task completions, file uploads, and chat activity—and calculates an automated Contribution Score. This provides faculty with a transparent, data-driven "Leaderboard" to grade students fairly based on empirical data.
