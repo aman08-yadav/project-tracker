@@ -208,10 +208,11 @@
         const due = task.dueDate ? new Date(task.dueDate) : null;
         const overdue = due && due < new Date() && task.status !== 'completed';
         const dateStr = due ? due.toLocaleDateString() : '';
+        const isMyTask = task.assignedTo?._id === user.id;
         
         const card = document.createElement('div');
         card.className = 'kanban-card';
-        card.draggable = true;
+        card.draggable = user.role === 'faculty' || isMyTask; // Only faculty or assignee can drag
         card.setAttribute('data-id', task._id);
         card.setAttribute('data-status', task.status);
         card.setAttribute('data-priority', task.priority || 'medium');
@@ -237,27 +238,42 @@
             
             ${due ? `<div class="task-deadline ${overdue ? 'overdue' : ''}" title="Due date">⏳ ${dateStr}</div>` : ''}
           </div>
+          ${isMyTask ? `<button class="btn btn-ghost btn-sm task-upload-btn" data-taskid="${task._id}" data-projectid="${task.project?._id || ''}" title="Upload file for this task" style="margin-top:10px;width:100%;font-size:0.75rem;padding:6px 10px;border:1px dashed var(--border);">📎 Upload File</button>` : ''}
         `;
 
-        // Drag events
-        card.addEventListener('dragstart', (e) => {
-          draggedTaskEl = card;
-          card.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          // e.dataTransfer.setData('text/plain', task._id); // Needed for Firefox
-        });
-        
-        card.addEventListener('dragend', () => {
-          draggedTaskEl = null;
-          card.classList.remove('dragging');
+        // Drag events (only for faculty or assigned student)
+        if (card.draggable) {
+          card.addEventListener('dragstart', (e) => {
+            draggedTaskEl = card;
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+          });
+          
+          card.addEventListener('dragend', () => {
+            draggedTaskEl = null;
+            card.classList.remove('dragging');
+          });
+        }
+
+        // Click to view/edit task
+        card.addEventListener('click', (e) => {
+          if (card.classList.contains('dragging')) return;
+          if (e.target.closest('.task-upload-btn')) return; // Don't open modal if upload btn clicked
+          if (user.role === 'faculty') {
+            openTaskModal(task); // Faculty gets full edit
+          } else {
+            openTaskViewModal(task); // Students get read-only view
+          }
         });
 
-        // Click to view details
-        card.addEventListener('click', (e) => {
-          // don't open modal if they're dragging
-          if (card.classList.contains('dragging')) return;
-          openTaskModal(task);
-        });
+        // Upload button click handler for students
+        const uploadBtn = card.querySelector('.task-upload-btn');
+        if (uploadBtn) {
+          uploadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openQuickUpload(task);
+          });
+        }
 
         c.appendChild(card);
       });
@@ -424,8 +440,169 @@
       }
     }
 
+    // ── Student: Read-Only Task View ──
+    function openTaskViewModal(task) {
+      const due = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No deadline';
+      const isMyTask = task.assignedTo?._id === user.id;
+
+      const modal = openModal(`
+        <div class="modal-header">
+          <h3>📋 Task Details</h3>
+          <button class="modal-close">×</button>
+        </div>
+        <div style="padding:0;">
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">
+            <div style="font-size:1.15rem;font-weight:700;color:var(--text-primary);margin-bottom:8px;">${task.title}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">${task.description || 'No description provided.'}</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Status</div>
+              <span class="badge badge-${task.status}">${task.status}</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Priority</div>
+              <span class="badge badge-${task.priority || 'medium'}">${task.priority || 'medium'}</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Due Date</div>
+              <div style="font-size:0.85rem;color:var(--text-primary);">📅 ${due}</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Assigned To</div>
+              <div style="font-size:0.85rem;color:var(--text-primary);">${task.assignedTo?.name || 'Unassigned'}</div>
+            </div>
+          </div>
+
+          ${isMyTask ? `
+          <div style="margin-bottom:16px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;display:block;">Update Status</label>
+            <select id="student-status-update" class="form-control">
+              <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+              <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" id="btn-update-status" style="flex:1;">💾 Update Status</button>
+            <button class="btn btn-secondary" id="btn-quick-upload-modal" style="flex:1;">📎 Upload File</button>
+          </div>
+          ` : ''}
+        </div>
+      `);
+
+      if (isMyTask) {
+        modal.querySelector('#btn-update-status').addEventListener('click', async () => {
+          const newStatus = modal.querySelector('#student-status-update').value;
+          try {
+            await ApiClient.put(`/tasks/${task._id}`, { status: newStatus });
+            if (newStatus === 'completed' && task.status !== 'completed') fireConfetti();
+            showToast('success', 'Updated', 'Task status updated.');
+            modal.remove();
+            loadTasks();
+          } catch (err) {
+            showToast('error', 'Error', err.message);
+          }
+        });
+
+        modal.querySelector('#btn-quick-upload-modal').addEventListener('click', () => {
+          modal.remove();
+          openQuickUpload(task);
+        });
+      }
+    }
+
+    // ── Quick Upload for Task ──
+    function openQuickUpload(task) {
+      const modal = openModal(`
+        <div class="modal-header">
+          <h3>📎 Upload File</h3>
+          <button class="modal-close">×</button>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.85rem;color:var(--text-muted);">Uploading for task: <strong style="color:var(--text-primary);">${task.title}</strong></div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Project: ${task.project?.name || 'Unknown'}</div>
+        </div>
+        <div class="upload-zone" id="quick-upload-zone" style="padding:30px;text-align:center;border:2px dashed var(--border);border-radius:var(--radius-md);cursor:pointer;transition:all 0.3s;">
+          <div style="font-size:2rem;margin-bottom:8px;">📤</div>
+          <div style="font-size:0.85rem;color:var(--text-secondary);">Click or drag file here</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">PDF, Word, Excel, Images, ZIP — Max 20MB</div>
+          <input type="file" id="quick-file-input" style="display:none">
+        </div>
+        <div id="quick-file-preview" style="display:none;margin-top:12px;"></div>
+        <div id="quick-upload-progress" style="display:none;margin-top:12px;">
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="quick-progress-fill" style="width:0%;transition:width 0.3s;"></div></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="quick-upload-btn" style="width:100%;margin-top:16px;" disabled>📤 Upload</button>
+      `);
+
+      const zone = modal.querySelector('#quick-upload-zone');
+      const fileInput = modal.querySelector('#quick-file-input');
+      const preview = modal.querySelector('#quick-file-preview');
+      const uploadBtn = modal.querySelector('#quick-upload-btn');
+      let selectedFile = null;
+
+      zone.addEventListener('click', () => fileInput.click());
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+      zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border)'; });
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.style.borderColor = 'var(--border)';
+        if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', () => { if (fileInput.files[0]) pickFile(fileInput.files[0]); });
+
+      function pickFile(f) {
+        if (f.size > 20 * 1024 * 1024) { showToast('warning', 'Too large', 'Max 20MB'); return; }
+        selectedFile = f;
+        const sizeStr = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size/1024).toFixed(1) + ' KB' : (f.size/1048576).toFixed(1) + ' MB';
+        preview.style.display = 'block';
+        preview.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-md);">
+          <span style="font-size:1.3rem;">📄</span>
+          <div style="flex:1;"><div style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">${f.name}</div><div style="font-size:0.7rem;color:var(--text-muted);">${sizeStr}</div></div>
+          <span style="color:var(--emerald);">✓</span>
+        </div>`;
+        uploadBtn.disabled = false;
+      }
+
+      uploadBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        const projectId = task.project?._id || task.project;
+        if (!projectId) { showToast('error', 'Error', 'No project associated'); return; }
+
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+        modal.querySelector('#quick-upload-progress').style.display = 'block';
+        modal.querySelector('#quick-progress-fill').style.width = '50%';
+
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        fd.append('projectId', projectId);
+        fd.append('description', `Uploaded for task: ${task.title}`);
+
+        try {
+          await ApiClient.upload('/files/upload', fd);
+          modal.querySelector('#quick-progress-fill').style.width = '100%';
+          showToast('success', 'Uploaded!', `${selectedFile.name} uploaded successfully.`);
+          setTimeout(() => modal.remove(), 500);
+        } catch (err) {
+          showToast('error', 'Upload Failed', err.message);
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '📤 Upload';
+        }
+      });
+    }
+
     // ── Setup listeners ──
-    document.getElementById('new-task-btn').addEventListener('click', () => openTaskModal());
+    const newTaskBtn = document.getElementById('new-task-btn');
+    if (user.role === 'faculty') {
+      newTaskBtn.addEventListener('click', () => openTaskModal());
+    } else {
+      newTaskBtn.style.display = 'none'; // Students can't create tasks
+    }
     document.getElementById('project-filter').addEventListener('change', loadTasks);
     document.getElementById('user-filter').addEventListener('change', renderTasks);
     document.getElementById('search-tasks').addEventListener('input', renderTasks);

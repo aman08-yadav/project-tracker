@@ -23,7 +23,7 @@
         <div class="upload-zone" id="upload-zone">
           <div class="upload-icon">📤</div>
           <h3>Drag & Drop files here</h3>
-          <p>or click to browse — Max 10MB per file</p>
+          <p>or click to browse — Max 20MB per file</p>
           <input type="file" id="file-input" style="display:none" multiple>
         </div>
 
@@ -123,8 +123,8 @@
     fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
 
     function handleFiles(files) {
-      selectedFiles = files.filter(f => f.size <= 10 * 1024 * 1024);
-      if (selectedFiles.length === 0) { showToast('warning', 'Too large', 'Files must be under 10MB'); return; }
+      selectedFiles = files.filter(f => f.size <= 20 * 1024 * 1024);
+      if (selectedFiles.length === 0) { showToast('warning', 'Too large', 'Files must be under 20MB'); return; }
       document.getElementById('upload-options').style.display = 'block';
 
       const queue = document.getElementById('file-queue');
@@ -200,17 +200,32 @@
         }
         list.innerHTML = filtered.map(f => `
           <div class="file-card">
-            <div class="file-icon">${getIcon(f.originalName || f.filename || '')}</div>
+            <div class="file-icon">${getIcon(f.originalName || '')}</div>
             <div class="file-info">
-              <div class="file-name">${f.originalName || f.filename}</div>
+              <div class="file-name">${f.originalName || 'Unknown file'}</div>
               <div class="file-meta">
-                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · ${timeAgo(f.uploadedAt || f.createdAt)} · ${f.project?.name || ''}
+                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · ${timeAgo(f.createdAt)} · ${f.project?.name || ''}
               </div>
             </div>
             <div class="file-size">${formatBytes(f.size)}</div>
-            <a href="/uploads/${f.filename}" target="_blank" class="btn btn-ghost btn-sm" download>⬇️</a>
+            <a href="/api/v1/files/download/${f._id}" class="btn btn-ghost btn-sm" title="Download">⬇️</a>
+            ${(f.uploadedBy?._id === user.id || user.role === 'faculty') ? `<button class="btn btn-ghost btn-sm delete-file-btn" data-id="${f._id}" title="Delete" style="color:var(--rose);">🗑️</button>` : ''}
           </div>
         `).join('');
+        
+        // Wire up delete buttons
+        list.querySelectorAll('.delete-file-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Delete this file?')) return;
+            try {
+              await ApiClient.delete(`/files/${btn.dataset.id}`);
+              showToast('success', 'Deleted', 'File removed.');
+              loadFiles();
+            } catch (err) {
+              showToast('error', 'Error', err.message);
+            }
+          });
+        });
       } catch (_) {
         list.innerHTML = `<p class="text-muted text-sm">Failed to load files.</p>`;
       }

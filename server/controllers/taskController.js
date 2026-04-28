@@ -170,18 +170,25 @@ const updateTask = async (req, res, next) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ success: false, message: 'Task not found.' });
 
-    // Only faculty or task creator can fully edit
-    if (req.user.role !== 'faculty' && task.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Only faculty or task creator can edit tasks.' });
-    }
-
     const { title, description, assignedTo, priority, dueDate, status } = req.body;
-    if (title) task.title = title;
-    if (description !== undefined) task.description = description;
-    if (assignedTo !== undefined) task.assignedTo = assignedTo || null;
-    if (priority) task.priority = priority;
-    if (dueDate !== undefined) task.dueDate = dueDate || null;
-    if (status) task.status = status;
+
+    // Students can only update status on tasks assigned to them
+    if (req.user.role !== 'faculty') {
+      const isAssigned = task.assignedTo?.toString() === req.user._id.toString();
+      if (!isAssigned) {
+        return res.status(403).json({ success: false, message: 'You can only update tasks assigned to you.' });
+      }
+      // Students can ONLY change status, ignore other fields
+      if (status) task.status = status;
+    } else {
+      // Faculty can edit everything
+      if (title) task.title = title;
+      if (description !== undefined) task.description = description;
+      if (assignedTo !== undefined) task.assignedTo = assignedTo || null;
+      if (priority) task.priority = priority;
+      if (dueDate !== undefined) task.dueDate = dueDate || null;
+      if (status) task.status = status;
+    }
     await task.save();
 
     await ActivityLog.create({

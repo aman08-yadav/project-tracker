@@ -6,6 +6,11 @@ const session = require('express-session');
 const helmet = require('helmet');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, process.env.UPLOAD_DIR || 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const initSockets = require('./sockets/socketHandler');
 
