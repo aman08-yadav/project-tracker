@@ -32,19 +32,19 @@
           <div class="stat-icon">✅</div>
           <div class="stat-value" id="stat-tasks">0</div>
           <div class="stat-label">Tasks Completed</div>
-          <div class="stat-trend up" id="trend-tasks">↑ 12% vs last week</div>
+          <div class="stat-trend up" id="trend-tasks">10 pts each</div>
         </div>
         <div class="stat-card emerald">
           <div class="stat-icon">📎</div>
           <div class="stat-value" id="stat-uploads">0</div>
-          <div class="stat-label">Files Uploaded</div>
-          <div class="stat-trend up" id="trend-uploads">↑ 5% vs last week</div>
+          <div class="stat-label" id="label-uploads">Files Approved</div>
+          <div class="stat-trend up" id="trend-uploads">5 pts each</div>
         </div>
         <div class="stat-card rose">
           <div class="stat-icon">🏆</div>
           <div class="stat-value" id="stat-score">0</div>
-          <div class="stat-label">Contribution Score</div>
-          <div class="stat-trend up">↑ Top 10%</div>
+          <div class="stat-label" id="label-score">Contribution Score</div>
+          <div class="stat-trend up" id="trend-score">Tasks × 10 + Uploads × 5</div>
         </div>
       </div>
 
@@ -193,6 +193,7 @@
       qaEl.innerHTML = `
         <a href="project.html" class="btn btn-primary" style="justify-content:flex-start;padding:14px 20px;">📁 <span style="margin-left:8px;">Manage Projects</span></a>
         <a href="tasks.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">➕ <span style="margin-left:8px;">Assign Task</span></a>
+        <a href="upload.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">📋 <span style="margin-left:8px;">Review Uploads</span> <span id="pending-badge" style="background:var(--rose);color:white;padding:2px 8px;border-radius:20px;font-size:0.7rem;margin-left:auto;display:none;"></span></a>
         <a href="analytics.html" class="btn btn-secondary" style="justify-content:flex-start;padding:14px 20px;">📈 <span style="margin-left:8px;">View Analytics</span></a>
       `;
     } else {
@@ -242,19 +243,32 @@
       try {
         const analyticsRes = await ApiClient.get(`/analytics/user/${user.id}`);
         const a = analyticsRes.analytics || {};
-        const score = (a.tasksCompleted || 0) * 10 + (a.uploadsCount || 0) * 5 + (a.activityCount || 0);
+        // Score ONLY from completed tasks + approved uploads (matches backend)
+        const score = (a.tasksCompleted || 0) * 10 + (a.uploadsCount || 0) * 5;
 
         animateCounter(document.getElementById('stat-projects'), a.projectsCount || 0);
         animateCounter(document.getElementById('stat-tasks'), a.tasksCompleted || 0);
         animateCounter(document.getElementById('stat-uploads'), a.uploadsCount || 0);
         
         if (isFaculty) {
+          // Faculty: show pending file reviews count
+          document.getElementById('label-uploads').textContent = 'Total Uploads';
+          document.getElementById('trend-uploads').textContent = 'All students';
+          document.getElementById('label-score').textContent = 'Pending Reviews';
+          document.getElementById('trend-score').textContent = 'Files awaiting approval';
           try {
-            const uRes = await ApiClient.get('/users');
-            document.querySelector('.stat-card.rose .stat-label').textContent = 'Registered Users';
-            document.querySelector('.stat-card.rose .stat-trend').textContent = '↑ Total Accounts';
-            animateCounter(document.getElementById('stat-score'), uRes.users?.length || 0);
-          } catch (_) {}
+            const pendingRes = await ApiClient.get('/files/pending');
+            const pendingCount = pendingRes.files?.length || 0;
+            animateCounter(document.getElementById('stat-score'), pendingCount);
+            // Update badge
+            const badge = document.getElementById('pending-badge');
+            if (badge && pendingCount > 0) {
+              badge.textContent = pendingCount + ' pending';
+              badge.style.display = 'inline';
+            }
+          } catch (_) {
+            animateCounter(document.getElementById('stat-score'), 0);
+          }
         } else {
           animateCounter(document.getElementById('stat-score'), score);
         }
