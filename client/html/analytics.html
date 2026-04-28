@@ -38,7 +38,10 @@
           </div>
 
           <div class="glass-card animate-in" style="animation-delay:0.1s;">
-            <h3 style="font-size:1.1rem; margin-bottom:20px;">Rankings</h3>
+            <div class="flex-between" style="margin-bottom:20px;">
+              <h3 style="font-size:1.1rem;">Rankings</h3>
+              <button id="export-csv-btn" class="btn btn-ghost btn-sm faculty-only" style="display:none;">📥 Export CSV</button>
+            </div>
             <div class="leaderboard-list" id="leaderboard-list">
               <!-- Rendered via JS -->
               <div class="skeleton" style="height:70px;"></div>
@@ -104,9 +107,42 @@
     const isFaculty = user.role === 'faculty';
     if (isFaculty) {
       document.getElementById('stats-title').textContent = 'Global Stats';
+      const exportBtn = document.getElementById('export-csv-btn');
+      if (exportBtn) {
+        exportBtn.style.display = 'inline-flex';
+        exportBtn.addEventListener('click', exportToCSV);
+      }
     }
 
     let allMembers = [];
+
+    // ── Export CSV Logic ──
+    function exportToCSV() {
+      if (!allMembers || allMembers.length === 0) return showToast('error', 'Export Failed', 'No data to export.');
+      
+      const headers = ['Rank', 'Name', 'Role', 'Tasks Completed', 'Files Approved', 'Total Score'];
+      const rows = allMembers
+        .sort((a, b) => b.score - a.score)
+        .map((m, index) => [
+          index + 1,
+          `"${m.name}"`,
+          m.role,
+          m.tasks,
+          m.uploads,
+          m.score
+        ]);
+        
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `ProjectHub_Leaderboard_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     // ── Load Projects ──
     async function loadProjects() {

@@ -315,11 +315,11 @@
         <form id="task-form">
           <div class="form-group">
             <label>Task Title</label>
-            <input type="text" id="t-title" class="form-control" value="${task?.title || ''}" required placeholder="What needs to be done?">
+            <input type="text" id="t-title" class="form-control" value="${task?.title || ''}" required maxlength="150" placeholder="What needs to be done?">
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="t-desc" class="form-control" rows="3" placeholder="Add some details...">${task?.description || ''}</textarea>
+            <textarea id="t-desc" class="form-control" rows="3" maxlength="1000" placeholder="Add some details...">${task?.description || ''}</textarea>
           </div>
           <div class="form-row">
             <div class="form-group">

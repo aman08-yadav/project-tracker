@@ -74,10 +74,17 @@ apiRouter.use('/users', userRoutes);
 
 app.use('/api/v1', apiRouter);
 
-// SPA fallback — serve index for unknown routes
+// Route root to index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/html/index.html'));
+});
+
+// SPA fallback / 404 handler
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../client/html/index.html'));
+    res.status(404).sendFile(path.join(__dirname, '../client/html/404.html'));
+  } else {
+    res.status(404).json({ success: false, message: 'API route not found' });
   }
 });
 
