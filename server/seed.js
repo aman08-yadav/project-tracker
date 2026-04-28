@@ -18,11 +18,13 @@ async function seed() {
   await User.deleteMany({ email: { $in: ['faculty@demo.com','student@demo.com','student2@demo.com'] } });
   console.log('🗑️  Cleared existing demo users');
 
+  const defaultPassword = process.env.DEFAULT_PASSWORD || 'student123';
+
   // Create Faculty
   const faculty = await User.create({
     name: 'Dr. Rajesh Kumar',
     email: 'faculty@demo.com',
-    password: 'demo1234',
+    password: process.env.FACULTY_PASSWORD || 'faculty123',
     role: 'faculty',
     provider: 'local',
   });
@@ -31,7 +33,7 @@ async function seed() {
   const student1 = await User.create({
     name: 'Aman Singh',
     email: 'student@demo.com',
-    password: 'demo1234',
+    password: defaultPassword,
     role: 'student',
     provider: 'local',
   });
@@ -39,7 +41,7 @@ async function seed() {
   const student2 = await User.create({
     name: 'Priya Sharma',
     email: 'student2@demo.com',
-    password: 'demo1234',
+    password: defaultPassword,
     role: 'student',
     provider: 'local',
   });
@@ -92,10 +94,10 @@ async function seed() {
 
   console.log('⚡ Created activity logs');
   console.log('\n🎉 Seeding complete!\n');
-  console.log('Demo accounts:');
-  console.log('  Faculty:  faculty@demo.com / demo1234');
-  console.log('  Student:  student@demo.com / demo1234');
-  console.log('  Student2: student2@demo.com / demo1234');
+  console.log('Demo accounts (passwords managed via env):');
+  console.log('  Faculty:  faculty@demo.com');
+  console.log('  Student:  student@demo.com');
+  console.log('  Student2: student2@demo.com');
 
   await mongoose.disconnect();
 }

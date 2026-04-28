@@ -307,8 +307,7 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        // Visual trick - just shuffle the array slightly to simulate period change
-        allMembers.forEach(m => m.score = Math.floor(m.score * (0.8 + Math.random()*0.4)));
+        // Re-render with current data (period filtering would require backend date-range queries)
         renderLeaderboard();
       });
     });
