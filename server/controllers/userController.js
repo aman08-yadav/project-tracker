@@ -6,12 +6,17 @@ const ActivityLog = require('../models/ActivityLog');
 // ─── GET /api/v1/users/leaderboard ───────────────────────────
 const getLeaderboard = async (req, res, next) => {
   try {
-    const users = await User.find({}).select('name email avatar role createdAt lastLogin');
+    // Only show students on the leaderboard (faculty are evaluators, not competitors)
+    const users = await User.find({ role: 'student' }).select('name email avatar role createdAt lastLogin');
     
     const leaderboardUnsorted = await Promise.all(users.map(async (user) => {
       const tasksCompleted = await Task.countDocuments({ assignedTo: user._id, status: 'completed' });
       const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: user._id });
-      const activityCount = await ActivityLog.countDocuments({ user: user._id });
+      // Only count meaningful project activities (not login/register)
+      const activityCount = await ActivityLog.countDocuments({
+        user: user._id,
+        action: { $in: ['task_created', 'task_updated', 'task_completed', 'file_upload', 'file_delete'] }
+      });
       
       const score = (tasksCompleted * 10) + (uploadsCount * 5) + (activityCount * 1);
       
@@ -29,8 +34,10 @@ const getLeaderboard = async (req, res, next) => {
       };
     }));
 
-    leaderboardUnsorted.sort((a, b) => b.score - a.score);
-    const leaderboard = leaderboardUnsorted.slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }));
+    // Only rank students who have actually contributed (score > 0)
+    const active = leaderboardUnsorted.filter(u => u.score > 0);
+    active.sort((a, b) => b.score - a.score);
+    const leaderboard = active.slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }));
 
     res.json({ success: true, leaderboard });
   } catch (error) {

@@ -150,39 +150,25 @@
           document.getElementById('stat-files').textContent = ms.reduce((sum,m)=>sum+m.uploads,0);
           
         } else {
-          // All time stats across everything - using faculty progress endpoint for everyone to get all students
-          const progRes = await ApiClient.get('/analytics/students-progress');
-          const progress = progRes.progress || [];
+          // Use the /users/leaderboard endpoint which already filters score > 0 and students only
+          const lbRes = await ApiClient.get('/users/leaderboard');
+          const lb = lbRes.leaderboard || [];
           
-          // We need uploads too, but since the endpoint doesn't return uploads easily for everyone, 
-          // we'll approximate score just by tasks for the demo, or we can assume tasks = 10pts.
-          allMembers = progress.map(p => ({
-            id: p.student.id, name: p.student.name, avatar: p.student.avatar, role: 'student',
-            tasks: p.tasksCompleted, uploads: 0, // Not available in that endpoint natively
-            score: p.tasksCompleted * 10
+          allMembers = lb.map(m => ({
+            id: m.userId, name: m.name, avatar: m.avatar, role: m.role,
+            tasks: m.tasksCompleted, uploads: m.uploadsCount,
+            score: m.score
           }));
           
-          // Try to get personal stats if student
+          // Personal stats
           if (!isFaculty) {
             const myRes = await ApiClient.get(`/analytics/user/${user.id}`);
             const a = myRes.analytics || {};
             document.getElementById('stat-tasks').textContent = a.tasksCompleted || 0;
             document.getElementById('stat-files').textContent = a.uploadsCount || 0;
-            // Update my own score in list accurately
-            const me = allMembers.find(m => m.id === user.id);
-            if (me) {
-              me.uploads = a.uploadsCount || 0;
-              me.score = calcScore(a.tasksCompleted || 0, a.uploadsCount || 0);
-            } else {
-              allMembers.push({
-                id: user.id, name: user.name, avatar: user.avatar, role: user.role,
-                tasks: a.tasksCompleted || 0, uploads: a.uploadsCount || 0,
-                score: calcScore(a.tasksCompleted || 0, a.uploadsCount || 0)
-              });
-            }
           } else {
             document.getElementById('stat-tasks').textContent = allMembers.reduce((sum,m)=>sum+m.tasks,0);
-            document.getElementById('stat-files').textContent = "—";
+            document.getElementById('stat-files').textContent = allMembers.reduce((sum,m)=>sum+m.uploads,0);
           }
         }
         
