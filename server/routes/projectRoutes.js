@@ -36,4 +36,18 @@ router.post('/:id/members', roleMiddleware('faculty'), [
 
 router.delete('/:id/members/:memberId', roleMiddleware('faculty'), removeMember);
 
+// ─── Chat History ─────────────────────────────────────────────
+const ChatMessage = require('../models/ChatMessage');
+router.get('/:id/chat', async (req, res, next) => {
+  try {
+    const messages = await ChatMessage.find({ project: req.params.id })
+      .populate('sender', 'name email avatar')
+      .sort({ createdAt: 1 })
+      .limit(100);
+    res.json({ success: true, messages });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

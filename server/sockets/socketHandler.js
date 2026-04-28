@@ -1,4 +1,5 @@
 const socketIo = require('socket.io');
+const ChatMessage = require('../models/ChatMessage');
 
 const onlineUsers = new Map(); // socketId → { userId, userName, projectId }
 
@@ -35,13 +36,30 @@ const initSockets = (server) => {
     });
 
     // ── Project Chat ─────────────────────────────────────────
-    socket.on('chat:message', (data) => {
+    socket.on('chat:message', async (data) => {
       const { projectId } = data;
-      // Support both frontend formats: {senderId, senderName, text} and {message, user}
+      const senderId = data.senderId || data.user?._id;
+      const senderName = data.senderName || data.user?.name || 'Unknown';
+      const text = data.text || data.message || '';
+
+      // Save to database for persistence
+      try {
+        if (senderId && projectId && text) {
+          await ChatMessage.create({
+            project: projectId,
+            sender: senderId,
+            senderName,
+            text,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to save chat message:', err.message);
+      }
+
       const payload = {
-        sender: data.senderId ? { _id: data.senderId, name: data.senderName } : data.user,
-        senderName: data.senderName || data.user?.name || 'Unknown',
-        text: data.text || data.message || '',
+        sender: { _id: senderId, name: senderName },
+        senderName,
+        text,
         createdAt: new Date(),
       };
       io.to(projectId).emit('chat:message', payload);
