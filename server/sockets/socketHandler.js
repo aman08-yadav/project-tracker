@@ -35,14 +35,22 @@ const initSockets = (server) => {
     });
 
     // ── Project Chat ─────────────────────────────────────────
-    socket.on('chat:message', ({ projectId, message, user }) => {
-      const payload = { message, user, timestamp: new Date() };
+    socket.on('chat:message', (data) => {
+      const { projectId } = data;
+      // Support both frontend formats: {senderId, senderName, text} and {message, user}
+      const payload = {
+        sender: data.senderId ? { _id: data.senderId, name: data.senderName } : data.user,
+        senderName: data.senderName || data.user?.name || 'Unknown',
+        text: data.text || data.message || '',
+        createdAt: new Date(),
+      };
       io.to(projectId).emit('chat:message', payload);
     });
 
     // ── Typing Indicator ─────────────────────────────────────
-    socket.on('chat:typing', ({ projectId, userName, isTyping }) => {
-      socket.to(projectId).emit('chat:typing', { userName, isTyping });
+    socket.on('chat:typing', (data) => {
+      const { projectId, userName, userId } = data;
+      socket.to(projectId).emit('chat:typing', { userName, userId, isTyping: true });
     });
 
     // ── Notification broadcast ───────────────────────────────

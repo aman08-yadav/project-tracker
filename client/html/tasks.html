@@ -384,8 +384,8 @@
         const payload = {
           title: modal.querySelector('#t-title').value,
           description: modal.querySelector('#t-desc').value,
-          project: pSelect.value,
-          assignedTo: aSelect.value,
+          projectId: pSelect.value,
+          assignedTo: aSelect.value || null,
           status: modal.querySelector('#t-status').value,
           priority: modal.querySelector('#t-priority').value,
           dueDate: modal.querySelector('#t-due').value || null

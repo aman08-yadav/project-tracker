@@ -180,11 +180,13 @@
         const visibleMembers = p.members.slice(0, limit);
         const extraCount = p.members.length - limit;
         
-        const avatarHtml = visibleMembers.map((m, i) => `
-          <div class="member-avatar" style="z-index:${limit - i};" title="${m.name}">
-            ${m.avatar ? `<img src="${m.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : avatarInitials(m.name)}
+        const avatarHtml = visibleMembers.map((m, i) => {
+          const mu = m.user || m;
+          return `
+          <div class="member-avatar" style="z-index:${limit - i};" title="${mu.name || ''}">
+            ${mu.avatar ? `<img src="${mu.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : avatarInitials(mu.name || 'U')}
           </div>
-        `).join('') + (extraCount > 0 ? `<div class="avatar-stack-more">+${extraCount}</div>` : '');
+        `}).join('') + (extraCount > 0 ? `<div class="avatar-stack-more">+${extraCount}</div>` : '');
 
         card.innerHTML = `
           <h3 style="font-size:1.1rem;margin-bottom:8px;color:var(--text-primary);">${p.name}</h3>
@@ -234,24 +236,28 @@
       // Render members
       const limit = 6;
       const visibleMembers = p.members.slice(0, limit);
-      document.getElementById('det-avatars').innerHTML = visibleMembers.map((m, i) => `
-        <div class="member-avatar" style="z-index:${limit - i};" title="${m.name} (${m.role})">
-          ${m.avatar ? `<img src="${m.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : avatarInitials(m.name)}
+      document.getElementById('det-avatars').innerHTML = visibleMembers.map((m, i) => {
+        const mu = m.user || m;
+        return `
+        <div class="member-avatar" style="z-index:${limit - i};" title="${mu.name || ''} (${m.role})">
+          ${mu.avatar ? `<img src="${mu.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : avatarInitials(mu.name || 'U')}
         </div>
-      `).join('');
+      `}).join('');
       
-      document.getElementById('det-members').innerHTML = p.members.map(m => `
+      document.getElementById('det-members').innerHTML = p.members.map(m => {
+        const mu = m.user || m;
+        return `
         <div class="member-card" style="padding:10px 14px;">
           <div class="member-avatar" style="width:36px;height:36px;font-size:0.8rem;">
-            ${m.avatar ? `<img src="${m.avatar}" alt="">` : avatarInitials(m.name)}
+            ${mu.avatar ? `<img src="${mu.avatar}" alt="">` : avatarInitials(mu.name || 'U')}
           </div>
           <div class="member-info">
-            <div class="member-name" style="font-size:0.85rem;">${m.name}</div>
-            <div class="member-email" style="font-size:0.7rem;">${m.email}</div>
+            <div class="member-name" style="font-size:0.85rem;">${mu.name || 'Unknown'}</div>
+            <div class="member-email" style="font-size:0.7rem;">${mu.email || ''}</div>
           </div>
           <span class="badge badge-${m.role === 'faculty' ? 'faculty' : 'student'}" style="font-size:0.6rem;">${m.role}</span>
         </div>
-      `).join('');
+      `}).join('');
 
       // Fetch analytics for progress
       try {
@@ -325,6 +331,24 @@
     // ── Add Member Modal ──
     document.getElementById('add-member-btn').addEventListener('click', async () => {
       if (!currentProject) return;
+      
+      // Fetch all students to populate a dropdown
+      let allStudents = [];
+      try {
+        const res = await ApiClient.get('/projects/students');
+        allStudents = res.users || [];
+      } catch (e) {
+        // fallback: fetch all users
+        try {
+          const res = await ApiClient.get('/users');
+          allStudents = (res.users || []).filter(u => u.role === 'student');
+        } catch (_) {}
+      }
+
+      // Filter out already-added members
+      const existingIds = currentProject.members.map(m => (m.user?._id || m._id || m.user)?.toString());
+      const available = allStudents.filter(s => !existingIds.includes(s._id.toString()));
+
       const modal = openModal(`
         <div class="modal-header">
           <h3>Add Member to Team</h3>
@@ -332,18 +356,24 @@
         </div>
         <form id="add-member-form">
           <div class="form-group">
-            <label>Student Email</label>
-            <input type="email" id="m-email" class="form-control" required placeholder="student@lpu.in">
+            <label>Select Student</label>
+            <select id="m-student" class="form-control" required>
+              <option value="">Choose a student...</option>
+              ${available.length > 0 
+                ? available.map(s => `<option value="${s._id}">${s.name} (${s.email})</option>`).join('')
+                : '<option value="" disabled>No available students</option>'}
+            </select>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:20px;">Add to Project</button>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:20px;" ${available.length === 0 ? 'disabled' : ''}>Add to Project</button>
         </form>
       `);
 
       modal.querySelector('#add-member-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = modal.querySelector('#m-email').value;
+        const memberId = modal.querySelector('#m-student').value;
+        if (!memberId) return showToast('error', 'Error', 'Please select a student.');
         try {
-          await ApiClient.post(`/projects/${currentProject._id}/members`, { email });
+          await ApiClient.post(`/projects/${currentProject._id}/members`, { memberId });
           showToast('success', 'Added', 'Member added to project.');
           modal.remove();
           // refresh details

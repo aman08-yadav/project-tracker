@@ -74,12 +74,22 @@ const getTasks = async (req, res, next) => {
     if (priority) filter.priority = priority;
     if (assignedTo) filter.assignedTo = assignedTo;
 
-    // Full-text search
+    // Full-text search — use $and to avoid overwriting student-access $or
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
+      const searchCondition = {
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+        ]
+      };
+      if (filter.$or) {
+        // Combine with existing $or (student access filter)
+        const existingOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [{ $or: existingOr }, searchCondition];
+      } else {
+        filter.$or = searchCondition.$or;
+      }
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
