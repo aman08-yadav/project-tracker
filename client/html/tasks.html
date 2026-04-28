@@ -166,6 +166,13 @@
     // ── Load & Render Tasks ──
     async function loadTasks() {
       try {
+        const cols = {
+          'pending': document.getElementById('col-pending'),
+          'in-progress': document.getElementById('col-in-progress'),
+          'completed': document.getElementById('col-completed')
+        };
+        Object.values(cols).forEach(c => c.innerHTML = '<div class="spinner" style="margin:40px auto;"></div>');
+
         const pId = document.getElementById('project-filter').value;
         const url = pId ? `/tasks/project/${pId}` : '/tasks';
         const res = await ApiClient.get(url);
@@ -173,6 +180,7 @@
         renderTasks();
       } catch (err) {
         showToast('error', 'Error', 'Failed to load tasks.');
+        Object.values(cols).forEach(c => c.innerHTML = '<div class="empty-state"><p>Error loading tasks</p></div>');
       }
     }
 
@@ -254,12 +262,27 @@
         c.appendChild(card);
       });
 
+      // Add empty states for empty columns
+      Object.keys(cols).forEach(key => {
+        const c = cols[key];
+        if (c.children.length === 0) {
+          c.innerHTML = `
+            <div class="empty-state" style="padding: 20px 10px; margin-top: 10px; border: 2px dashed rgba(255,255,255,0.05); border-radius: var(--radius-md);">
+              <div class="icon" style="font-size: 1.5rem; margin-bottom: 8px;">${key === 'completed' ? '🎉' : '📋'}</div>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">No tasks ${key.replace('-', ' ')}</p>
+            </div>
+          `;
+        }
+      });
+
       updateKanbanCounts();
     }
 
     function updateKanbanCounts() {
       ['pending', 'in-progress', 'completed'].forEach(s => {
-        const count = document.getElementById(`col-${s}`).children.length;
+        // filter out empty-state div from count
+        const col = document.getElementById(`col-${s}`);
+        const count = Array.from(col.children).filter(child => !child.classList.contains('empty-state')).length;
         document.getElementById(`count-${s}`).textContent = count;
       });
     }
