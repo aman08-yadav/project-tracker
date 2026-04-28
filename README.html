@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectHub - README</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+            line-height: 1.6;
+            color: #24292e;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: #e1e4e8;
+            border: 0;
+        }
+        code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+            font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+        pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            padding-left: 2em;
+        }
+        li {
+            margin-bottom: 0.25em;
+        }
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <h1>🚀 ProjectHub</h1>
+        <p><b>Team Contribution Tracking System</b></p>
+        <p><i>A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.</i></p>
+        <br />
+        <!-- Badges -->
+        <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+        <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js" />
+        <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+        <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+        <img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.io" />
+    </div>
+
+    <br />
+
+    <h2>📖 About The Project</h2>
+    <p>In academic and professional group projects, evaluating individual contributions is traditionally subjective and opaque. Often, a minority of students perform the majority of the work, yet all group members receive identical evaluations.</p>
+    <p><b>ProjectHub</b> solves this by providing a unified workspace where students manage tasks, upload files, and chat in real-time. Crucially, the system silently monitors every action—task completions, file uploads, and chat activity—and calculates an automated <b>Contribution Score</b>. This provides faculty with a transparent, data-driven "Leaderboard" to grade students fairly based on empirical data.</p>
+
+    <hr>
+
+    <h2>✨ Core Features</h2>
+    <ul>
+        <li>🔐 <b>Multi-Provider Authentication</b>: Secure login via local Email/Password (JWT), Google OAuth 2.0, and GitHub OAuth.</li>
+        <li>👥 <b>Role-Based Access Control (RBAC)</b>: Distinct interfaces and permissions for <code>student</code> and <code>faculty</code> roles.</li>
+        <li>📋 <b>Interactive Kanban Board</b>: Drag-and-drop or click-based task tracking (Pending ➡️ In-Progress ➡️ Completed).</li>
+        <li>💬 <b>Real-Time Project Rooms</b>: Live WebSockets chat with typing indicators and online status tracking.</li>
+        <li>📁 <b>Centralized File Management</b>: Secure drag-and-drop file uploads tracked per project.</li>
+        <li>🏆 <b>Automated Analytics & Leaderboard</b>: Real-time ranking of students based on calculated contribution metrics.</li>
+    </ul>
+
+    <hr>
+
+    <h2>🛠️ Technology Stack & Architecture</h2>
+    <p>This project was built without heavy frontend frameworks like React or Angular to demonstrate a deep understanding of core web technologies, while the backend leverages a cutting-edge dual-database architecture.</p>
+
+    <h3>Frontend</h3>
+    <ul>
+        <li><b>HTML5 & Vanilla CSS3</b>: Modern "Dark Glassmorphism" aesthetic with responsive grid/flexbox layouts.</li>
+        <li><b>Vanilla JavaScript (ES6 Modules)</b>: Highly modular client-side logic utilizing <code>async/await</code>, dynamic DOM manipulation, and native <code>fetch</code> API.</li>
+    </ul>
+
+    <h3>Backend</h3>
+    <ul>
+        <li><b>Node.js & Express.js</b>: Robust server environment and RESTful API routing.</li>
+        <li><b>Socket.IO</b>: Bidirectional WebSocket connections for real-time chat and UI updates.</li>
+        <li><b>Passport.js</b>: Handling Google and GitHub OAuth 2.0 strategies.</li>
+    </ul>
+
+    <h3>Dual-Database Architecture</h3>
+    <ul>
+        <li><b>MongoDB (via Mongoose)</b>: Primary operational database. Ideal for unstructured and rapidly changing data like Chat Messages, User Profiles, and Tasks.</li>
+        <li><b>PostgreSQL (via Prisma ORM)</b>: Analytics Engine. Relational DB used for numerical aggregations, ensuring the Leaderboard and Contribution calculations are mathematically robust. <i>(Utilizes <code>@neondatabase/serverless</code> WebSockets to bypass firewalls).</i></li>
+    </ul>
+
+    <hr>
+
+    <h2>📂 Project Structure</h2>
+<pre><code>project-tracker/
+├── client/          # Frontend assets (HTML, CSS, Vanilla JS)
+├── server/          # Node.js backend logic
+│   ├── config/      # Database connection logic
+│   ├── controllers/ # Business logic (Tasks, Analytics)
+│   ├── middleware/  # Security (JWT, Role checking)
+│   ├── models/      # MongoDB Schemas
+│   ├── prisma/      # PostgreSQL Schema
+│   ├── routes/      # API routing
+│   ├── sockets/     # Socket.IO room management
+│   └── server.js    # Entry point
+└── start-live-server.bat # Quick start script</code></pre>
+
+    <hr>
+
+    <h2>🚀 Getting Started</h2>
+    <p>Follow these steps to set up the project locally.</p>
+
+    <h3>Prerequisites</h3>
+    <ul>
+        <li><a href="https://nodejs.org/">Node.js</a> (v16+)</li>
+        <li><a href="https://www.mongodb.com/">MongoDB</a> (Local or Atlas)</li>
+        <li><a href="https://www.postgresql.org/">PostgreSQL</a> (or Neon Database)</li>
+    </ul>
+
+    <h3>Installation</h3>
+    <ol>
+        <li><b>Clone the repository</b>
+<pre><code>git clone https://github.com/yourusername/project-tracker.git
+cd project-tracker</code></pre>
+        </li>
+        <li><b>Install Server Dependencies</b>
+<pre><code>cd server
+npm install</code></pre>
+        </li>
+        <li><b>Configure Environment Variables</b>
+        <br>Create a <code>.env</code> file in the <code>server</code> directory and add the following:
+<pre><code>PORT=5000
+MONGO_URI=your_mongodb_connection_string
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret
+
+# OAuth Credentials (Optional but recommended)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret</code></pre>
+        </li>
+        <li><b>Initialize Prisma (PostgreSQL)</b>
+<pre><code>cd server
+npx prisma generate
+npx prisma db push</code></pre>
+        </li>
+        <li><b>Start the Application</b>
+        <br>You can either run the server manually:
+<pre><code>cd server
+npm run dev</code></pre>
+        <br>Or use the provided batch script from the root directory:
+<pre><code>./start-live-server.bat</code></pre>
+        </li>
+    </ol>
+
+    <hr>
+
+    <h2>💡 How It Works (The Contribution Formula)</h2>
+    <p>The core of the academic evaluation relies on the PostgreSQL analytics engine. When a faculty member views the Leaderboard, the backend dynamically calculates scores using weighted metrics:</p>
+<pre><code>const contributionScore = Math.round(
+  (analytics.tasksCompleted * 10) +  // High weight for finishing work
+  (analytics.uploadsCount * 5) +     // Medium weight for sharing resources
+  (analytics.activityCount * 1)      // Low weight for general chat/activity
+);</code></pre>
+
+    <hr>
+
+    <h2>🔒 Security Measures</h2>
+    <ul>
+        <li><b>Stateless JWT Auth</b>: High scalability without server-side session memory.</li>
+        <li><b>Bcrypt Hashing</b>: Secure password storage in MongoDB.</li>
+        <li><b>Network Resilience</b>: Neon Serverless HTTP/WS adapters bypass academic firewall restrictions.</li>
+        <li><b>MIME Validation</b>: Strict filtering on uploaded files to prevent malicious scripts.</li>
+    </ul>
+
+    <hr>
+
+    <h2>📄 License</h2>
+    <p>This project is open-source and available under the <a href="LICENSE">MIT License</a>.</p>
+
+</body>
+</html>

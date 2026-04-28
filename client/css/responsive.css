@@ -27,7 +27,7 @@
     box-shadow: 4px 0 30px rgba(0,0,0,0.5);
   }
   .sidebar-overlay {
-    display: block;
+    /* Removed display: block to fix initial load shadow bug */
   }
   
   .app-layout {

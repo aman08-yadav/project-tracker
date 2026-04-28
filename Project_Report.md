@@ -5,6 +5,12 @@
 
 *A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.*
 
+**Submitted by:** Aman Kumar  
+**Reg. No:** 12401495  
+**Roll No:** 2  
+**GitHub Link:** [https://github.com/aman08-yadav/project-tracker](https://github.com/aman08-yadav/project-tracker)  
+**Deployed Link:** [https://project-trackerlpu.onrender.com](https://project-trackerlpu.onrender.com)  
+
 </div>
 
 ---
@@ -43,7 +49,7 @@ In academic and professional group projects, evaluating individual contributions
 
 ## 3. Technology Stack & Frameworks
 
-To demonstrate a deep understanding of core web technologies, the frontend was built without heavy frameworks like React or Angular, while the backend leverages a cutting-edge dual-database architecture.
+To demonstrate a deep understanding of core web technologies, the frontend was built without heavy frameworks like React or Angular, while the backend leverages a robust Node.js and MongoDB architecture.
 
 ### Frontend (Client-Side)
 * **HTML5 & Vanilla CSS3**: Structured with semantic HTML. The UI is designed using a modern **"Dark Glassmorphism"** aesthetic, featuring frosted glass panels, vibrant gradients, and CSS grid/flexbox layouts.
@@ -54,10 +60,8 @@ To demonstrate a deep understanding of core web technologies, the frontend was b
 * **Socket.IO**: Establishes bidirectional WebSocket connections for real-time chat and instant UI updates.
 * **Passport.js**: Industry-standard middleware for handling Google and GitHub OAuth 2.0 authentication strategies.
 
-### Dual-Database Architecture
-* **MongoDB (via Mongoose)**: Used as the primary operational database. Ideal for unstructured and rapidly changing data like Chat Messages, User Profiles, and hierarchical Project/Task relationships.
-* **PostgreSQL (via Prisma ORM)**: Used exclusively as an Analytics Engine. Relational databases excel at numerical aggregations, ensuring that the Leaderboard and Contribution calculations are lightning-fast and mathematically robust. 
-  * *Note:* We utilized `@neondatabase/serverless` WebSockets over Port 443 to bypass restrictive university firewalls.
+### Database Architecture
+* **MongoDB (via Mongoose)**: Used as the primary operational database. Ideal for unstructured and rapidly changing data like Chat Messages, User Profiles, Activity Logs, and hierarchical Project/Task relationships. The database seamlessly handles both application state and analytical data aggregation for the leaderboard.
 
 ---
 
@@ -67,11 +71,9 @@ The backend strictly follows the **MVC (Model-View-Controller)** design pattern 
 
 ```text
 server/
-├── config/          # Database connection logic (Prisma WebSockets)
 ├── controllers/     # Business logic (Task handling, Analytics math)
 ├── middleware/      # Security (JWT Auth, Role checking, Error handling)
 ├── models/          # MongoDB Schemas (User, Project, Task, ActivityLog)
-├── prisma/          # PostgreSQL Schema (UserAnalytics, ProjectAnalytics)
 ├── routes/          # Express API route definitions
 ├── sockets/         # Socket.IO room management & event listeners
 └── server.js        # Application entry point
@@ -81,7 +83,7 @@ server/
 1. **Client Request**: Frontend JS sends a JSON request via `fetch()`.
 2. **Middleware**: `authMiddleware.js` intercepts the request, decodes the JWT token, and attaches the user to the request.
 3. **Controller**: `taskController.js` creates a new task in MongoDB.
-4. **Analytics Trigger**: The controller simultaneously updates the student's `tasksCompleted` tally in PostgreSQL via Prisma.
+4. **Analytics Trigger**: The controller simultaneously updates the student's activity log in MongoDB to track their contribution.
 5. **Real-time Broadcast**: `socketHandler.js` instantly pushes a notification to all other teammates currently online.
 
 ---
@@ -89,7 +91,7 @@ server/
 ## 5. Implementation Highlights
 
 ### The Contribution Formula
-The core of the academic evaluation relies on the PostgreSQL analytics engine. When a faculty member views the Leaderboard, the backend dynamically calculates scores using weighted metrics:
+The core of the academic evaluation relies on the analytics engine. When a faculty member views the Leaderboard, the backend dynamically calculates scores using weighted metrics based on the student's activity logs:
 ```javascript
 const contributionScore = Math.round(
   (analytics.tasksCompleted * 10) +  // High weight for finishing work
@@ -113,8 +115,8 @@ socket.on('joinProject', (projectId) => {
 
 * **JWT (JSON Web Tokens)**: Stateless authentication ensures the server doesn't need to store session memory, making it highly scalable.
 * **Password Hashing**: `bcryptjs` is used to salt and hash all passwords before they enter MongoDB.
-* **Network Resilience**: By utilizing Neon Serverless HTTP/WS adapters for PostgreSQL, the application circumvents traditional corporate/academic firewall restrictions that block standard database ports (5432).
 * **Multer File Validation**: Uploaded files are strictly filtered by MIME type to prevent malicious script uploads.
+* **CORS & Helmet**: Used to secure Express apps by setting various HTTP headers and protecting against cross-site request forgery.
 
 ---
 
@@ -130,4 +132,4 @@ socket.on('joinProject', (projectId) => {
 * Eliminates the guesswork in group grading.
 * Provides empirical, tamper-proof data regarding exactly who contributed what, and when.
 
-By leveraging a strict Vanilla JS frontend with a highly advanced Node.js/Dual-Database backend, this project demonstrates full-stack mastery, system architecture design, and a deep understanding of modern web aesthetics.
+By leveraging a strict Vanilla JS frontend with a highly advanced Node.js/MongoDB backend, this project demonstrates full-stack mastery, system architecture design, and a deep understanding of modern web aesthetics.

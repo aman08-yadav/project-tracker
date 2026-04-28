@@ -1,112 +1,184 @@
-<div align="center"><h1>🚀 ProjectHub: Team Contribution Tracking System</h1>
-<p><strong>Comprehensive Academic Project Report</strong></p>
-<p><em>A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.</em></p>
-</div><hr>
-<h2>📑 Table of Contents</h2>
-<ol>
-<li><a href="#1-abstract--problem-statement">Abstract &amp; Problem Statement</a></li>
-<li><a href="#2-core-features">Core Features</a></li>
-<li><a href="#3-technology-stack--frameworks">Technology Stack &amp; Frameworks</a></li>
-<li><a href="#4-system-architecture--code-structure">System Architecture &amp; Code Structure</a></li>
-<li><a href="#5-implementation-highlights">Implementation Highlights</a></li>
-<li><a href="#6-security--optimization">Security &amp; Optimization</a></li>
-<li><a href="#7-conclusion--benefits">Conclusion &amp; Benefits</a></li>
-</ol>
-<hr>
-<h2>1. Abstract &amp; Problem Statement</h2>
-<h3>The Problem</h3>
-<p>In academic and professional group projects, evaluating individual contributions is traditionally subjective and opaque. Often, a minority of students perform the majority of the work, yet all group members receive identical evaluations. </p>
-<h3>The Solution</h3>
-<p><strong>ProjectHub</strong> solves this by providing a unified workspace where students manage tasks, upload files, and chat in real-time. Crucially, the system silently monitors every action—task completions, file uploads, and chat activity—and calculates an automated <strong>Contribution Score</strong>. This provides faculty with a transparent, data-driven &quot;Leaderboard&quot; to grade students fairly based on empirical data.</p>
-<hr>
-<h2>2. Core Features</h2>
-<ul>
-<li>🔐 <strong>Multi-Provider Authentication</strong>: Secure login via local Email/Password (JWT), Google OAuth 2.0, and GitHub OAuth.</li>
-<li>👥 <strong>Role-Based Access Control (RBAC)</strong>: Distinct interfaces and permissions for <code>student</code> and <code>faculty</code> roles.</li>
-<li>📋 <strong>Interactive Kanban Board</strong>: Drag-and-drop or click-based task tracking (Pending ➡️ In-Progress ➡️ Completed).</li>
-<li>💬 <strong>Real-Time Project Rooms</strong>: Live WebSockets chat with typing indicators and online status tracking.</li>
-<li>📁 <strong>Centralized File Management</strong>: Secure drag-and-drop file uploads tracked per project.</li>
-<li>🏆 <strong>Automated Analytics &amp; Leaderboard</strong>: Real-time ranking of students based on calculated contribution metrics.</li>
-</ul>
-<hr>
-<h2>3. Technology Stack &amp; Frameworks</h2>
-<p>To demonstrate a deep understanding of core web technologies, the frontend was built without heavy frameworks like React or Angular, while the backend leverages a cutting-edge dual-database architecture.</p>
-<h3>Frontend (Client-Side)</h3>
-<ul>
-<li><strong>HTML5 &amp; Vanilla CSS3</strong>: Structured with semantic HTML. The UI is designed using a modern <strong>&quot;Dark Glassmorphism&quot;</strong> aesthetic, featuring frosted glass panels, vibrant gradients, and CSS grid/flexbox layouts.</li>
-<li><strong>Vanilla JavaScript (ES6 Modules)</strong>: Highly modular client-side logic utilizing <code>async/await</code>, dynamic DOM manipulation, and the native <code>fetch</code> API.</li>
-</ul>
-<h3>Backend (Server-Side)</h3>
-<ul>
-<li><strong>Node.js &amp; Express.js</strong>: Provides a robust, lightweight server environment and RESTful API routing.</li>
-<li><strong>Socket.IO</strong>: Establishes bidirectional WebSocket connections for real-time chat and instant UI updates.</li>
-<li><strong>Passport.js</strong>: Industry-standard middleware for handling Google and GitHub OAuth 2.0 authentication strategies.</li>
-</ul>
-<h3>Dual-Database Architecture</h3>
-<ul>
-<li><strong>MongoDB (via Mongoose)</strong>: Used as the primary operational database. Ideal for unstructured and rapidly changing data like Chat Messages, User Profiles, and hierarchical Project/Task relationships.</li>
-<li><strong>PostgreSQL (via Prisma ORM)</strong>: Used exclusively as an Analytics Engine. Relational databases excel at numerical aggregations, ensuring that the Leaderboard and Contribution calculations are lightning-fast and mathematically robust. <ul>
-<li><em>Note:</em> We utilized <code>@neondatabase/serverless</code> WebSockets over Port 443 to bypass restrictive university firewalls.</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h2>4. System Architecture &amp; Code Structure</h2>
-<p>The backend strictly follows the <strong>MVC (Model-View-Controller)</strong> design pattern to ensure code maintainability.</p>
-<pre><code class="language-text">server/
-├── config/          # Database connection logic (Prisma WebSockets)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectHub - Academic Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #fafafa;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .student-details {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: left;
+            display: inline-block;
+            min-width: 300px;
+            border-left: 5px solid #0056b3;
+        }
+        .student-details p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        h1 { color: #0056b3; }
+        h2 { color: #004085; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; margin-top: 30px; }
+        h3 { color: #343a40; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background-color: #f1f3f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #d63384; }
+        pre { background-color: #212529; color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        pre code { background-color: transparent; color: inherit; padding: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🚀 ProjectHub: Team Contribution Tracking System</h1>
+        <h3>Comprehensive Academic Project Report</h3>
+        <p><i>A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.</i></p>
+        
+        <div class="student-details">
+            <p><b>Submitted by:</b> Aman Kumar</p>
+            <p><b>Reg. No:</b> 12401495</p>
+            <p><b>Roll No:</b> 2</p>
+            <p><b>GitHub Link:</b> <a href="https://github.com/aman08-yadav/project-tracker" target="_blank">https://github.com/aman08-yadav/project-tracker</a></p>
+            <p><b>Deployed Link:</b> <a href="https://project-trackerlpu.onrender.com" target="_blank">https://project-trackerlpu.onrender.com</a></p>
+        </div>
+    </div>
+
+    <h2>📑 Table of Contents</h2>
+    <ol>
+        <li><a href="#abstract">Abstract & Problem Statement</a></li>
+        <li><a href="#features">Core Features</a></li>
+        <li><a href="#tech">Technology Stack & Frameworks</a></li>
+        <li><a href="#arch">System Architecture & Code Structure</a></li>
+        <li><a href="#impl">Implementation Highlights</a></li>
+        <li><a href="#sec">Security & Optimization</a></li>
+        <li><a href="#conclusion">Conclusion & Benefits</a></li>
+    </ol>
+
+    <h2 id="abstract">1. Abstract & Problem Statement</h2>
+    <h3>The Problem</h3>
+    <p>In academic and professional group projects, evaluating individual contributions is traditionally subjective and opaque. Often, a minority of students perform the majority of the work, yet all group members receive identical evaluations.</p>
+
+    <h3>The Solution</h3>
+    <p><b>ProjectHub</b> solves this by providing a unified workspace where students manage tasks, upload files, and chat in real-time. Crucially, the system silently monitors every action—task completions, file uploads, and chat activity—and calculates an automated <b>Contribution Score</b>. This provides faculty with a transparent, data-driven "Leaderboard" to grade students fairly based on empirical data.</p>
+
+    <h2 id="features">2. Core Features</h2>
+    <ul>
+        <li>🔐 <b>Multi-Provider Authentication</b>: Secure login via local Email/Password (JWT), Google OAuth 2.0, and GitHub OAuth.</li>
+        <li>👥 <b>Role-Based Access Control (RBAC)</b>: Distinct interfaces and permissions for <code>student</code> and <code>faculty</code> roles.</li>
+        <li>📋 <b>Interactive Kanban Board</b>: Drag-and-drop or click-based task tracking (Pending ➡️ In-Progress ➡️ Completed).</li>
+        <li>💬 <b>Real-Time Project Rooms</b>: Live WebSockets chat with typing indicators and online status tracking.</li>
+        <li>📁 <b>Centralized File Management</b>: Secure drag-and-drop file uploads tracked per project.</li>
+        <li>🏆 <b>Automated Analytics & Leaderboard</b>: Real-time ranking of students based on calculated contribution metrics.</li>
+    </ul>
+
+    <h2 id="tech">3. Technology Stack & Frameworks</h2>
+    <p>To demonstrate a deep understanding of core web technologies, the frontend was built without heavy frameworks like React or Angular, while the backend leverages a robust Node.js and MongoDB architecture.</p>
+
+    <h3>Frontend (Client-Side)</h3>
+    <ul>
+        <li><b>HTML5 & Vanilla CSS3</b>: Structured with semantic HTML. The UI is designed using a modern <b>"Dark Glassmorphism"</b> aesthetic, featuring frosted glass panels, vibrant gradients, and CSS grid/flexbox layouts.</li>
+        <li><b>Vanilla JavaScript (ES6 Modules)</b>: Highly modular client-side logic utilizing <code>async/await</code>, dynamic DOM manipulation, and the native <code>fetch</code> API.</li>
+    </ul>
+
+    <h3>Backend (Server-Side)</h3>
+    <ul>
+        <li><b>Node.js & Express.js</b>: Provides a robust, lightweight server environment and RESTful API routing.</li>
+        <li><b>Socket.IO</b>: Establishes bidirectional WebSocket connections for real-time chat and instant UI updates.</li>
+        <li><b>Passport.js</b>: Industry-standard middleware for handling Google and GitHub OAuth 2.0 authentication strategies.</li>
+    </ul>
+
+    <h3>Database Architecture</h3>
+    <ul>
+        <li><b>MongoDB (via Mongoose)</b>: Used as the primary operational database. Ideal for unstructured and rapidly changing data like Chat Messages, User Profiles, Activity Logs, and hierarchical Project/Task relationships. The database seamlessly handles both application state and analytical data aggregation for the leaderboard.</li>
+    </ul>
+
+    <h2 id="arch">4. System Architecture & Code Structure</h2>
+    <p>The backend strictly follows the <b>MVC (Model-View-Controller)</b> design pattern to ensure code maintainability.</p>
+<pre><code>server/
 ├── controllers/     # Business logic (Task handling, Analytics math)
 ├── middleware/      # Security (JWT Auth, Role checking, Error handling)
 ├── models/          # MongoDB Schemas (User, Project, Task, ActivityLog)
-├── prisma/          # PostgreSQL Schema (UserAnalytics, ProjectAnalytics)
 ├── routes/          # Express API route definitions
-├── sockets/         # Socket.IO room management &amp; event listeners
-└── server.js        # Application entry point
-</code></pre>
-<h3>Flow of Data</h3>
-<ol>
-<li><strong>Client Request</strong>: Frontend JS sends a JSON request via <code>fetch()</code>.</li>
-<li><strong>Middleware</strong>: <code>authMiddleware.js</code> intercepts the request, decodes the JWT token, and attaches the user to the request.</li>
-<li><strong>Controller</strong>: <code>taskController.js</code> creates a new task in MongoDB.</li>
-<li><strong>Analytics Trigger</strong>: The controller simultaneously updates the student&#39;s <code>tasksCompleted</code> tally in PostgreSQL via Prisma.</li>
-<li><strong>Real-time Broadcast</strong>: <code>socketHandler.js</code> instantly pushes a notification to all other teammates currently online.</li>
-</ol>
-<hr>
-<h2>5. Implementation Highlights</h2>
-<h3>The Contribution Formula</h3>
-<p>The core of the academic evaluation relies on the PostgreSQL analytics engine. When a faculty member views the Leaderboard, the backend dynamically calculates scores using weighted metrics:</p>
-<pre><code class="language-javascript">const contributionScore = Math.round(
+├── sockets/         # Socket.IO room management & event listeners
+└── server.js        # Application entry point</code></pre>
+
+    <h3>Flow of Data</h3>
+    <ol>
+        <li><b>Client Request</b>: Frontend JS sends a JSON request via <code>fetch()</code>.</li>
+        <li><b>Middleware</b>: <code>authMiddleware.js</code> intercepts the request, decodes the JWT token, and attaches the user to the request.</li>
+        <li><b>Controller</b>: <code>taskController.js</code> creates a new task in MongoDB.</li>
+        <li><b>Analytics Trigger</b>: The controller simultaneously updates the student's activity log in MongoDB to track their contribution.</li>
+        <li><b>Real-time Broadcast</b>: <code>socketHandler.js</code> instantly pushes a notification to all other teammates currently online.</li>
+    </ol>
+
+    <h2 id="impl">5. Implementation Highlights</h2>
+    <h3>The Contribution Formula</h3>
+    <p>The core of the academic evaluation relies on the analytics engine. When a faculty member views the Leaderboard, the backend dynamically calculates scores using weighted metrics based on the student's activity logs:</p>
+<pre><code>const contributionScore = Math.round(
   (analytics.tasksCompleted * 10) +  // High weight for finishing work
   (analytics.uploadsCount * 5) +     // Medium weight for sharing resources
   (analytics.activityCount * 1)      // Low weight for general chat/activity
-);
-</code></pre>
-<h3>Real-Time Isolated Rooms</h3>
-<p>To ensure privacy between different project teams, Socket.IO utilizes the concept of &quot;Rooms&quot;:</p>
-<pre><code class="language-javascript">socket.on(&#39;joinProject&#39;, (projectId) =&gt; {
+);</code></pre>
+
+    <h3>Real-Time Isolated Rooms</h3>
+    <p>To ensure privacy between different project teams, Socket.IO utilizes the concept of "Rooms":</p>
+<pre><code>socket.on('joinProject', (projectId) => {
   socket.join(projectId); // Client joins isolated room
-  io.to(projectId).emit(&#39;userJoined&#39;, user.name); // Broadcasts only to teammates
-});
-</code></pre>
-<hr>
-<h2>6. Security &amp; Optimization</h2>
-<ul>
-<li><strong>JWT (JSON Web Tokens)</strong>: Stateless authentication ensures the server doesn&#39;t need to store session memory, making it highly scalable.</li>
-<li><strong>Password Hashing</strong>: <code>bcryptjs</code> is used to salt and hash all passwords before they enter MongoDB.</li>
-<li><strong>Network Resilience</strong>: By utilizing Neon Serverless HTTP/WS adapters for PostgreSQL, the application circumvents traditional corporate/academic firewall restrictions that block standard database ports (5432).</li>
-<li><strong>Multer File Validation</strong>: Uploaded files are strictly filtered by MIME type to prevent malicious script uploads.</li>
-</ul>
-<hr>
-<h2>7. Conclusion &amp; Benefits</h2>
-<p><strong>ProjectHub</strong> successfully bridges the gap between collaborative student workflows and objective academic grading. </p>
-<p><strong>Benefits for Students:</strong></p>
-<ul>
-<li>Provides a beautiful, lag-free environment to communicate and share files.</li>
-<li>Ensures that hard-working students are explicitly recognized for their efforts.</li>
-</ul>
-<p><strong>Benefits for Faculty:</strong></p>
-<ul>
-<li>Eliminates the guesswork in group grading.</li>
-<li>Provides empirical, tamper-proof data regarding exactly who contributed what, and when.</li>
-</ul>
-<p>By leveraging a strict Vanilla JS frontend with a highly advanced Node.js/Dual-Database backend, this project demonstrates full-stack mastery, system architecture design, and a deep understanding of modern web aesthetics.</p>
+  io.to(projectId).emit('userJoined', user.name); // Broadcasts only to teammates
+});</code></pre>
+
+    <h2 id="sec">6. Security & Optimization</h2>
+    <ul>
+        <li><b>JWT (JSON Web Tokens)</b>: Stateless authentication ensures the server doesn't need to store session memory, making it highly scalable.</li>
+        <li><b>Password Hashing</b>: <code>bcryptjs</code> is used to salt and hash all passwords before they enter MongoDB.</li>
+        <li><b>Multer File Validation</b>: Uploaded files are strictly filtered by MIME type to prevent malicious script uploads.</li>
+        <li><b>CORS & Helmet</b>: Used to secure Express apps by setting various HTTP headers and protecting against cross-site request forgery.</li>
+    </ul>
+
+    <h2 id="conclusion">7. Conclusion & Benefits</h2>
+    <p><b>ProjectHub</b> successfully bridges the gap between collaborative student workflows and objective academic grading.</p>
+    
+    <p><b>Benefits for Students:</b></p>
+    <ul>
+        <li>Provides a beautiful, lag-free environment to communicate and share files.</li>
+        <li>Ensures that hard-working students are explicitly recognized for their efforts.</li>
+    </ul>
+
+    <p><b>Benefits for Faculty:</b></p>
+    <ul>
+        <li>Eliminates the guesswork in group grading.</li>
+        <li>Provides empirical, tamper-proof data regarding exactly who contributed what, and when.</li>
+    </ul>
+
+    <p>By leveraging a strict Vanilla JS frontend with a highly advanced Node.js/MongoDB backend, this project demonstrates full-stack mastery, system architecture design, and a deep understanding of modern web aesthetics.</p>
+
+</div>
+
+</body>
+</html>
