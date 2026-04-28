@@ -211,7 +211,7 @@
             <div class="file-info" style="flex:1;min-width:200px;">
               <div class="file-name">${f.originalName || 'Unknown file'}</div>
               <div class="file-meta">
-                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · ${timeAgo(f.createdAt)} · ${f.project?.name || ''}
+                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · <span title="${new Date(f.createdAt).toLocaleString()}">${timeAgo(f.createdAt)} (${new Date(f.createdAt).toLocaleDateString()})</span> · ${f.project?.name || ''}
               </div>
               ${f.description ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;font-style:italic;">${f.description}</div>` : ''}
               ${f.reviewNote ? `<div style="font-size:0.7rem;color:var(--cyan);margin-top:2px;">💬 ${f.reviewNote}</div>` : ''}

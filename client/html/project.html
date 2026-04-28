@@ -190,6 +190,7 @@
 
         card.innerHTML = `
           <h3 style="font-size:1.1rem;margin-bottom:8px;color:var(--text-primary);">${p.name}</h3>
+          <p class="text-xs text-muted" style="margin-bottom:8px;">📅 Created: ${formatDate(p.createdAt || new Date())}</p>
           <p class="text-sm text-muted" style="margin-bottom:20px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.description || 'No description provided.'}</p>
           
           <div class="avatar-stack" style="margin-left:10px;margin-bottom:20px;">

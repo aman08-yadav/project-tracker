@@ -60,6 +60,9 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '../client')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Prevent favicon 404 console errors
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Custom Logger Middleware
 app.use(loggerMiddleware);
 
