@@ -11,14 +11,10 @@ const getLeaderboard = async (req, res, next) => {
     
     const leaderboardUnsorted = await Promise.all(users.map(async (user) => {
       const tasksCompleted = await Task.countDocuments({ assignedTo: user._id, status: 'completed' });
-      const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: user._id, status: 'approved' });
-      // Only count meaningful project activities (not login/register)
-      const activityCount = await ActivityLog.countDocuments({
-        user: user._id,
-        action: { $in: ['task_created', 'task_updated', 'task_completed', 'file_upload', 'file_delete'] }
-      });
+      const uploadsApproved = await FileMetadata.countDocuments({ uploadedBy: user._id, status: 'approved' });
       
-      const score = (tasksCompleted * 10) + (uploadsCount * 5) + (activityCount * 1);
+      // Score ONLY from real verified work: completed tasks + faculty-approved uploads
+      const score = (tasksCompleted * 10) + (uploadsApproved * 5);
       
       return {
         userId: user._id,
@@ -27,15 +23,14 @@ const getLeaderboard = async (req, res, next) => {
         avatar: user.avatar || '',
         role: user.role || 'student',
         tasksCompleted,
-        uploadsCount,
-        activityCount,
+        uploadsCount: uploadsApproved,
         score,
         lastActive: user.lastLogin || user.createdAt,
       };
     }));
 
-    // Only rank students who have actually contributed (score > 0)
-    const active = leaderboardUnsorted.filter(u => u.score > 0);
+    // Only show students who have actually done verified work
+    const active = leaderboardUnsorted.filter(u => u.tasksCompleted > 0 || u.uploadsCount > 0);
     active.sort((a, b) => b.score - a.score);
     const leaderboard = active.slice(0, 20).map((r, idx) => ({ ...r, rank: idx + 1 }));
 
