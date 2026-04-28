@@ -37,6 +37,18 @@ const fileMetadataSchema = new mongoose.Schema({
     default: '',
     maxlength: 300,
   },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  reviewedAt: { type: Date, default: null },
+  reviewNote: { type: String, default: '', maxlength: 200 },
   createdAt: { type: Date, default: Date.now },
 });
 

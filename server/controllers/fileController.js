@@ -143,4 +143,55 @@ const downloadFile = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadFile, getProjectFiles, getFiles, deleteFile, downloadFile };
+// ── Review (Approve/Reject) File — Faculty Only ──────────────
+const reviewFile = async (req, res, next) => {
+  try {
+    const { status, reviewNote } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status must be approved or rejected.' });
+    }
+
+    const file = await FileMetadata.findById(req.params.id);
+    if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
+
+    file.status = status;
+    file.reviewedBy = req.user._id;
+    file.reviewedAt = new Date();
+    file.reviewNote = reviewNote || '';
+    await file.save();
+
+    await ActivityLog.create({
+      user: req.user._id,
+      project: file.project,
+      action: status === 'approved' ? 'file_approved' : 'file_rejected',
+      metadata: { fileId: file._id, originalName: file.originalName },
+    });
+
+    // Notify via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(file.project.toString()).emit('file:reviewed', {
+        fileId: file._id, status, originalName: file.originalName, reviewedBy: req.user.name,
+      });
+    }
+
+    res.json({ success: true, message: `File ${status}.`, file });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Get Pending Files (Faculty Dashboard) ────────────────────
+const getPendingFiles = async (req, res, next) => {
+  try {
+    const files = await FileMetadata.find({ status: 'pending' })
+      .populate('uploadedBy', 'name email')
+      .populate('project', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, files });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { uploadFile, getProjectFiles, getFiles, deleteFile, downloadFile, reviewFile, getPendingFiles };

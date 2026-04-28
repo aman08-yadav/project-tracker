@@ -192,26 +192,42 @@
         const res = await ApiClient.get(url);
         allFiles = res.files || [];
         const filtered = allFiles.filter(f =>
-          !search || f.originalName?.toLowerCase().includes(search) || f.filename?.toLowerCase().includes(search)
+          !search || f.originalName?.toLowerCase().includes(search)
         );
         if (filtered.length === 0) {
           list.innerHTML = `<div class="empty-state"><div class="icon">📎</div><h3>No files yet</h3><p>Upload project files to get started</p></div>`;
           return;
         }
-        list.innerHTML = filtered.map(f => `
-          <div class="file-card">
+        list.innerHTML = filtered.map(f => {
+          const statusBadge = f.status === 'approved' 
+            ? '<span style="background:rgba(16,185,129,0.15);color:#34d399;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600;">✅ Approved</span>'
+            : f.status === 'rejected'
+            ? '<span style="background:rgba(244,63,94,0.15);color:#fb7185;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600;">❌ Rejected</span>'
+            : '<span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600;">⏳ Pending</span>';
+
+          return `
+          <div class="file-card" style="flex-wrap:wrap;">
             <div class="file-icon">${getIcon(f.originalName || '')}</div>
-            <div class="file-info">
+            <div class="file-info" style="flex:1;min-width:200px;">
               <div class="file-name">${f.originalName || 'Unknown file'}</div>
               <div class="file-meta">
                 Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · ${timeAgo(f.createdAt)} · ${f.project?.name || ''}
               </div>
+              ${f.description ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;font-style:italic;">${f.description}</div>` : ''}
+              ${f.reviewNote ? `<div style="font-size:0.7rem;color:var(--cyan);margin-top:2px;">💬 ${f.reviewNote}</div>` : ''}
             </div>
-            <div class="file-size">${formatBytes(f.size)}</div>
-            <a href="/api/v1/files/download/${f._id}" class="btn btn-ghost btn-sm" title="Download">⬇️</a>
-            ${(f.uploadedBy?._id === user.id || user.role === 'faculty') ? `<button class="btn btn-ghost btn-sm delete-file-btn" data-id="${f._id}" title="Delete" style="color:var(--rose);">🗑️</button>` : ''}
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${statusBadge}
+              <div class="file-size">${formatBytes(f.size)}</div>
+              <a href="/api/v1/files/download/${f._id}" class="btn btn-ghost btn-sm" title="Download">⬇️</a>
+              ${user.role === 'faculty' && f.status === 'pending' ? `
+                <button class="btn btn-ghost btn-sm approve-btn" data-id="${f._id}" title="Approve" style="color:var(--emerald);font-size:0.85rem;">✅</button>
+                <button class="btn btn-ghost btn-sm reject-btn" data-id="${f._id}" title="Reject" style="color:var(--rose);font-size:0.85rem;">❌</button>
+              ` : ''}
+              ${(f.uploadedBy?._id === user.id || user.role === 'faculty') ? `<button class="btn btn-ghost btn-sm delete-file-btn" data-id="${f._id}" title="Delete" style="color:var(--rose);">🗑️</button>` : ''}
+            </div>
           </div>
-        `).join('');
+        `}).join('');
         
         // Wire up delete buttons
         list.querySelectorAll('.delete-file-btn').forEach(btn => {
@@ -220,6 +236,33 @@
             try {
               await ApiClient.delete(`/files/${btn.dataset.id}`);
               showToast('success', 'Deleted', 'File removed.');
+              loadFiles();
+            } catch (err) {
+              showToast('error', 'Error', err.message);
+            }
+          });
+        });
+
+        // Wire up approve buttons (faculty)
+        list.querySelectorAll('.approve-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            try {
+              await ApiClient.patch(`/files/${btn.dataset.id}/review`, { status: 'approved', reviewNote: 'Looks good!' });
+              showToast('success', 'Approved', 'File approved — student earns points!');
+              loadFiles();
+            } catch (err) {
+              showToast('error', 'Error', err.message);
+            }
+          });
+        });
+
+        // Wire up reject buttons (faculty)
+        list.querySelectorAll('.reject-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const reason = prompt('Reason for rejection (optional):') || 'Please upload the correct document.';
+            try {
+              await ApiClient.patch(`/files/${btn.dataset.id}/review`, { status: 'rejected', reviewNote: reason });
+              showToast('warning', 'Rejected', 'File rejected — student notified.');
               loadFiles();
             } catch (err) {
               showToast('error', 'Error', err.message);

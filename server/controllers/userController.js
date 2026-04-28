@@ -11,7 +11,7 @@ const getLeaderboard = async (req, res, next) => {
     
     const leaderboardUnsorted = await Promise.all(users.map(async (user) => {
       const tasksCompleted = await Task.countDocuments({ assignedTo: user._id, status: 'completed' });
-      const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: user._id });
+      const uploadsCount = await FileMetadata.countDocuments({ uploadedBy: user._id, status: 'approved' });
       // Only count meaningful project activities (not login/register)
       const activityCount = await ActivityLog.countDocuments({
         user: user._id,
