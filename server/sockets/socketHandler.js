@@ -1,7 +1,9 @@
 const socketIo = require('socket.io');
 const ChatMessage = require('../models/ChatMessage');
+const Notification = require('../models/Notification');
 
 const onlineUsers = new Map(); // socketId → { userId, userName, projectId }
+const userSockets = new Map(); // userId → Set of socketIds
 
 const initSockets = (server) => {
   const io = socketIo(server, {
@@ -9,10 +11,18 @@ const initSockets = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`🔌 Socket connected: ${socket.id}`);
+    // Track user socket mapping
+    socket.on('register:user', ({ userId }) => {
+      if (userId) {
+        socket.userId = userId;
+        if (!userSockets.has(userId)) userSockets.set(userId, new Set());
+        userSockets.get(userId).add(socket.id);
+      }
+    });
 
     // ── Join a project room ──────────────────────────────────
     socket.on('join:project', ({ projectId, userId, userName }) => {
+      if (!projectId) return;
       socket.join(projectId);
       onlineUsers.set(socket.id, { userId, userName, projectId });
 
@@ -22,8 +32,6 @@ const initSockets = (server) => {
       // Send current online members to the new joiner
       const roomMembers = [...onlineUsers.values()].filter(u => u.projectId === projectId);
       socket.emit('online:members', roomMembers);
-
-      console.log(`👥 ${userName} joined project room: ${projectId}`);
     });
 
     // ── Leave a project room ─────────────────────────────────
@@ -83,9 +91,25 @@ const initSockets = (server) => {
         socket.to(user.projectId).emit('user:left', { userId: user.userId, userName: user.userName });
         onlineUsers.delete(socket.id);
       }
-      console.log(`🔴 Socket disconnected: ${socket.id}`);
+      // Clean up user socket mapping
+      if (socket.userId && userSockets.has(socket.userId)) {
+        userSockets.get(socket.userId).delete(socket.id);
+        if (userSockets.get(socket.userId).size === 0) {
+          userSockets.delete(socket.userId);
+        }
+      }
     });
   });
+
+  // Expose helper to send notification to a specific user
+  io.sendNotification = async (userId, notification) => {
+    const sockets = userSockets.get(userId);
+    if (sockets && sockets.size > 0) {
+      sockets.forEach(socketId => {
+        io.to(socketId).emit('notification:new', notification);
+      });
+    }
+  };
 
   return io;
 };

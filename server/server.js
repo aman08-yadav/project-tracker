@@ -20,6 +20,9 @@ const taskRoutes = require('./routes/taskRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const notificationPreferencesRoutes = require('./routes/notificationPreferencesRoutes');
+const rankingRoutes = require('./routes/rankingRoutes');
 
 const loggerMiddleware = require('./middleware/loggerMiddleware');
 const errorMiddleware = require('./middleware/errorMiddleware');
@@ -74,8 +77,21 @@ apiRouter.use('/tasks', taskRoutes);
 apiRouter.use('/files', fileRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/notification-preferences', notificationPreferencesRoutes);
+apiRouter.use('/ranking', rankingRoutes);
 
 app.use('/api/v1', apiRouter);
+
+// Health check endpoint (for Render uptime monitoring)
+app.get('/api/v1/health', async (req, res) => {
+  try {
+    await mongoose.connection.db.admin().ping();
+    res.json({ status: 'ok', uptime: process.uptime() });
+  } catch {
+    res.status(503).json({ status: 'error', message: 'Database unreachable' });
+  }
+});
 
 // Route root to index.html
 app.get('/', (req, res) => {
@@ -99,13 +115,12 @@ const PORT = process.env.PORT || 5001;
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('✅ Connected to MongoDB Atlas');
+    // Connected to MongoDB Atlas
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
   });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 API base: /api/v1`);
+  // Server is running
 });

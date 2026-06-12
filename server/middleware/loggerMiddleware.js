@@ -13,9 +13,7 @@ const loggerMiddleware = (req, res, next) => {
     const reset = '\x1b[0m';
     const user = req.user ? `[${req.user.email}]` : '[guest]';
 
-    console.log(
-      `${timestamp} ${statusColor}${res.statusCode}${reset} ${req.method} ${req.originalUrl} ${user} ${duration}ms`
-    );
+    // Logging is disabled in production
   });
 
   next();

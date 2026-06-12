@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const Task = require('../models/Task');
 const Project = require('../models/Project');
 const ActivityLog = require('../models/ActivityLog');
+const { createNotification } = require('./notificationController');
 
 // ─── Create Task ──────────────────────────────────────────────
 const createTask = async (req, res, next) => {
@@ -43,9 +44,28 @@ const createTask = async (req, res, next) => {
     const io = req.app.get('io');
     if (io) io.to(projectId).emit('task:created', { task });
 
+    // ── Send notification to assigned student ──────────────
+    if (assignedTo) {
+      const notification = await createNotification({
+        recipientId: assignedTo,
+        senderId: req.user._id,
+        type: 'task_assigned',
+        title: 'New Task Assigned',
+        message: `${req.user.name} assigned you a task: ${title}`,
+        projectId: projectId,
+        taskId: task._id,
+      });
+
+      // Real-time notification to the assigned student
+      if (io && notification) {
+        io.sendNotification(assignedTo, notification);
+      }
+    }
+
     const populated = await Task.findById(task._id)
       .populate('assignedTo', 'name email avatar')
-      .populate('createdBy', 'name email');
+      .populate('createdBy', 'name email')
+      .populate('project', 'name');
 
     res.status(201).json({ success: true, task: populated });
   } catch (error) {
@@ -151,6 +171,22 @@ const updateTaskStatus = async (req, res, next) => {
     const io = req.app.get('io');
     if (io) {
       io.to(task.project.toString()).emit('task:updated', { task, updatedBy: req.user.name, newStatus: status });
+    }
+
+    // ── Notify task creator/faculty when student completes task ──
+    if (status === 'completed' && task.createdBy?.toString() !== req.user._id.toString()) {
+      const notification = await createNotification({
+        recipientId: task.createdBy,
+        senderId: req.user._id,
+        type: 'task_completed',
+        title: 'Task Completed',
+        message: `${req.user.name} completed the task: ${task.title}`,
+        projectId: task.project,
+        taskId: task._id,
+      });
+      if (io && notification) {
+        io.sendNotification(task.createdBy.toString(), notification);
+      }
     }
 
     const populated = await Task.findById(task._id)

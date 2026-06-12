@@ -188,39 +188,86 @@ export function buildTopbar(title = '') {
 
 // ── Notifications System ──────────────────────────────────────
 let unreadCount = 0;
-const notifications = [];
+let notificationsList = [];
+let notifDrawerEl = null;
+let notifOverlayEl = null;
 
 function initNotifications() {
   const btn = document.getElementById('notif-btn');
-  const overlay = document.getElementById('notif-overlay');
-  const drawer = document.getElementById('notif-drawer');
+  notifOverlayEl = document.getElementById('notif-overlay');
+  notifDrawerEl = document.getElementById('notif-drawer');
   const close = document.getElementById('notif-close');
 
   const openDrawer = () => {
-    drawer.classList.add('open');
-    overlay.classList.add('open');
-    unreadCount = 0;
-    updateBadge();
-    renderNotifications();
+    notifDrawerEl.classList.add('open');
+    notifOverlayEl.classList.add('open');
+    loadNotificationsFromServer();
   };
 
   const closeDrawer = () => {
-    drawer.classList.remove('open');
-    overlay.classList.remove('open');
+    notifDrawerEl.classList.remove('open');
+    notifOverlayEl.classList.remove('open');
   };
 
   btn?.addEventListener('click', openDrawer);
   close?.addEventListener('click', closeDrawer);
-  overlay?.addEventListener('click', closeDrawer);
+  notifOverlayEl?.addEventListener('click', closeDrawer);
+
+  // Load initial unread count
+  fetchUnreadCount();
 
   // Expose global function for Socket.IO events to call
   window.addNotification = (log) => {
-    notifications.unshift({ ...log, unread: true });
-    if (notifications.length > 20) notifications.pop();
+    notificationsList.unshift({ ...log, unread: true });
+    if (notificationsList.length > 20) notificationsList.pop();
     unreadCount++;
     updateBadge();
-    if (drawer.classList.contains('open')) renderNotifications();
+    renderNotifications();
+    // Show toast for incoming notification
+    showToast('info', log.title || 'Notification', log.message || '');
+    // Play subtle notification sound
+    playNotificationSound();
   };
+}
+
+async function fetchUnreadCount() {
+  try {
+    const res = await ApiClient.get('/notifications/unread-count');
+    unreadCount = res.unreadCount || 0;
+    updateBadge();
+  } catch (_) {}
+}
+
+let notifPage = 1;
+let notifHasMore = false;
+const NOTIF_LIMIT = 20;
+
+async function loadNotificationsFromServer(append = false) {
+  try {
+    if (!append) notifPage = 1;
+    const res = await ApiClient.get(`/notifications?page=${notifPage}&limit=${NOTIF_LIMIT}`);
+    const newNotifs = (res.notifications || []).map(n => ({ ...n, unread: !n.read }));
+    
+    if (append) {
+      notificationsList = notificationsList.concat(newNotifs);
+    } else {
+      notificationsList = newNotifs;
+      unreadCount = res.unreadCount || 0;
+      updateBadge();
+    }
+    
+    notifHasMore = res.pagination ? res.pagination.page < res.pagination.pages : false;
+    renderNotifications();
+
+    // Mark all as read on server
+    if (!append && unreadCount > 0) {
+      await ApiClient.patch('/notifications/read-all', {});
+      unreadCount = 0;
+      updateBadge();
+    }
+  } catch (_) {
+    renderNotifications();
+  }
 }
 
 function updateBadge() {
@@ -236,28 +283,158 @@ function updateBadge() {
 
 function renderNotifications() {
   const list = document.getElementById('notif-list');
-  if (notifications.length === 0) {
+  if (!list) return;
+  if (notificationsList.length === 0) {
     list.innerHTML = `<div class="empty-state"><div class="icon" style="font-size:2rem;margin-bottom:10px;">🔔</div><h3 style="font-size:0.95rem;">You're all caught up!</h3><p style="font-size:0.8rem;">No new activity yet.</p></div>`;
     return;
   }
 
-  const icons = { task_created:'📝', task_updated:'🔄', task_completed:'✅', file_uploaded:'📎', member_added:'👤', project_created:'📁' };
+  const icons = { task_assigned:'📋', task_completed:'✅', task_updated:'🔄', file_uploaded:'📎', file_approved:'✅', file_rejected:'❌', member_added:'👤', project_created:'📁' };
 
-  list.innerHTML = notifications.map(n => `
+  list.innerHTML = notificationsList.map(n => {
+    const senderName = n.sender?.name || n.user?.name || 'Someone';
+    const projectName = n.project?.name || '';
+    const taskTitle = n.taskId?.title || n.metadata?.title || '';
+    const title = n.title || n.action?.replace(/_/g, ' ') || 'Notification';
+    const message = n.message || '';
+    
+    return `
     <div class="notif-item ${n.unread ? 'unread' : ''}">
-      <div class="notif-item-icon">${icons[n.action] || '⚡'}</div>
+      <div class="notif-item-icon">${icons[n.type || n.action] || '⚡'}</div>
       <div class="notif-item-body">
         <div class="notif-item-text">
-          <strong>${n.user?.name || 'Someone'}</strong> ${n.action.replace(/_/g,' ')}
-          ${n.metadata?.title ? `— <em style="color:var(--accent-light);">${n.metadata.title}</em>` : ''}
+          <strong>${escapeHtml(senderName)}</strong> ${escapeHtml(title)}
+          ${taskTitle ? `— <em style="color:var(--accent-light);">${escapeHtml(taskTitle)}</em>` : ''}
         </div>
-        <div class="notif-item-time">${timeAgo(n.createdAt || Date.now())} • ${n.project?.name || 'Project'}</div>
+        ${message ? `<div class="notif-item-time" style="margin-top:2px;">${escapeHtml(message)}</div>` : ''}
+        <div class="notif-item-time">${timeAgo(n.createdAt || Date.now())}${projectName ? ` • ${escapeHtml(projectName)}` : ''}</div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 
-  // Mark all read
-  notifications.forEach(n => n.unread = false);
+  // Mark all as visually read
+  notificationsList.forEach(n => n.unread = false);
+
+  // Add 'Load More' button if there are more notifications
+  if (notifHasMore) {
+    const loadMoreBtn = document.createElement('div');
+    loadMoreBtn.className = 'notif-load-more';
+    loadMoreBtn.innerHTML = '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;">Load older notifications ↓</button>';
+    loadMoreBtn.addEventListener('click', async () => {
+      notifPage++;
+      loadMoreBtn.innerHTML = '<div class="spinner" style="margin:8px auto;"></div>';
+      await loadNotificationsFromServer(true);
+    });
+    list.appendChild(loadMoreBtn);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Also expose escapeHtml globally for inline scripts
+window.escapeHtml = escapeHtml;
+
+// ── Notification Sound (Web Audio API) ──────────────────────
+let audioCtx = null;
+let lastSoundTime = 0;
+
+export function playNotificationSound() {
+  try {
+    // Debounce: don't play more than once every 2 seconds
+    const now = Date.now();
+    if (now - lastSoundTime < 2000) return;
+    lastSoundTime = now;
+    
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const now = audioCtx.currentTime;
+    
+    // First tone (higher)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now); // A5
+    gain1.gain.setValueAtTime(0.15, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc1.connect(gain1).connect(audioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+    
+    // Second tone (lower, after a short delay)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1175, now + 0.12); // D6
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.setValueAtTime(0.12, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc2.connect(gain2).connect(audioCtx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.5);
+  } catch (_) {}
+}
+
+// ── Browser Push Notifications ────────────────────────────────
+let pushPermission = 'default';
+
+export async function requestPushPermission() {
+  if (!('Notification' in window)) {
+    showToast('warning', 'Not Supported', 'Your browser does not support push notifications.');
+    return 'denied';
+  }
+  pushPermission = await Notification.requestPermission();
+  return pushPermission;
+}
+
+export function isPushSupported() {
+  return 'Notification' in window;
+}
+
+export function getPushPermission() {
+  if ('Notification' in window) return Notification.permission;
+  return 'denied';
+}
+
+export function showBrowserNotification(title, body, icon) {
+  if (getPushPermission() === 'granted') {
+    try {
+      const notif = new Notification(title, {
+        body,
+        icon: icon || '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'projecthub-' + Date.now(),
+        requireInteraction: false,
+      });
+      notif.onclick = () => { window.focus(); notif.close(); };
+      setTimeout(() => notif.close(), 5000);
+    } catch (_) {}
+  }
+}
+
+// ── Notification Preferences Helper ───────────────────────────
+export async function loadNotificationPrefs() {
+  try {
+    const res = await ApiClient.get('/notification-preferences');
+    return res.preferences || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function saveNotificationPrefs(prefs) {
+  try {
+    await ApiClient.put('/notification-preferences', prefs);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 // ── Help Modal ────────────────────────────────────────────────
@@ -323,6 +500,12 @@ export function openProfileModal() {
       <button type="submit" class="btn btn-primary" style="width:100%;margin-bottom:12px;">Update Profile</button>
       <button type="button" class="btn btn-danger" style="width:100%;" onclick="window.uiLogout()">⏏ Log Out</button>
     </form>
+
+    <div class="divider"></div>
+    <div id="notif-prefs-section" style="margin-top:20px;">
+      <h4 style="font-size:0.95rem;color:var(--text-primary);margin-bottom:16px;">🔔 Notification Settings</h4>
+      <div id="notif-prefs-content"><div class="spinner" style="margin:20px auto;"></div></div>
+    </div>
   `);
 
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
@@ -349,6 +532,9 @@ export function openProfileModal() {
       btn.textContent = 'Update Profile';
     }
   });
+
+  // Load notification preferences
+  loadNotifPrefsIntoModal();
 }
 
 // ── Keyboard Shortcuts ────────────────────────────────────────
@@ -439,6 +625,80 @@ export function animateCounter(el, target, duration = 1500) {
       el.textContent = Math.floor(start);
     }
   }, 1000 / fps);
+}
+
+// ── Notification Preferences in Profile Modal ─────────────────
+async function loadNotifPrefsIntoModal() {
+  const container = document.getElementById('notif-prefs-content');
+  if (!container) return;
+
+  try {
+    const prefs = await loadNotificationPrefs();
+    if (!prefs) { container.innerHTML = '<p class="text-muted text-sm">Could not load preferences.</p>'; return; }
+
+    const pushSupported = isPushSupported();
+    const pushGranted = getPushPermission() === 'granted';
+
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        ${!pushSupported ? '<p class="text-muted text-sm" style="padding:8px 12px;background:rgba(245,158,11,0.1);border-radius:8px;">⚠️ Browser push notifications are not supported in this browser.</p>' : ''}
+        ${pushSupported && !pushGranted ? `<button class="btn btn-secondary btn-sm" id="enable-push-btn" style="width:100%;margin-bottom:8px;">🔔 Enable Browser Push Notifications</button>` : ''}
+        ${pushSupported && pushGranted ? '<p class="text-muted text-sm" style="padding:8px 12px;background:rgba(16,185,129,0.1);border-radius:8px;">✅ Browser push notifications are enabled.</p>' : ''}
+        
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-top:8px;">In-App Notifications</div>
+        ${buildToggle('Task Assigned', prefs.inApp?.taskAssigned !== false, 'inApp-taskAssigned')}
+        ${buildToggle('Task Completed', prefs.inApp?.taskCompleted !== false, 'inApp-taskCompleted')}
+        ${buildToggle('File Approved', prefs.inApp?.fileApproved !== false, 'inApp-fileApproved')}
+        ${buildToggle('File Rejected', prefs.inApp?.fileRejected !== false, 'inApp-fileRejected')}
+
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-top:12px;">Browser Push</div>
+        ${buildToggle('Task Assigned', prefs.browserPush?.taskAssigned !== false, 'browserPush-taskAssigned', !pushGranted)}
+        ${buildToggle('Task Completed', prefs.browserPush?.taskCompleted !== false, 'browserPush-taskCompleted', !pushGranted)}
+        ${buildToggle('File Approved', prefs.browserPush?.fileApproved !== false, 'browserPush-fileApproved', !pushGranted)}
+        ${buildToggle('File Rejected', prefs.browserPush?.fileRejected !== false, 'browserPush-fileRejected', !pushGranted)}
+      </div>
+    `;
+
+    // Enable push button
+    const enableBtn = document.getElementById('enable-push-btn');
+    if (enableBtn) {
+      enableBtn.addEventListener('click', async () => {
+        const result = await requestPushPermission();
+        if (result === 'granted') {
+          showToast('success', 'Enabled', 'Browser push notifications are now active!');
+          await saveNotificationPrefs({ browserPush: { enabled: true } });
+          loadNotifPrefsIntoModal(); // Refresh
+        } else {
+          showToast('warning', 'Denied', 'Push notification permission was denied.');
+        }
+      });
+    }
+
+    // Toggle handlers
+    container.querySelectorAll('.notif-toggle input').forEach(input => {
+      input.addEventListener('change', async () => {
+        const key = input.dataset.key;
+        const [category, type] = key.split('-');
+        const update = { [category]: { [type]: input.checked } };
+        await saveNotificationPrefs(update);
+      });
+    });
+  } catch (_) {
+    container.innerHTML = '<p class="text-muted text-sm">Failed to load preferences.</p>';
+  }
+}
+
+function buildToggle(label, checked, key, disabled = false) {
+  return `
+    <label class="notif-toggle" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);cursor:${disabled ? 'not-allowed' : 'pointer'};opacity:${disabled ? '0.5' : '1'};transition:all var(--transition);">
+      <span style="font-size:0.85rem;color:var(--text-primary);">${label}</span>
+      <div style="position:relative;width:40px;height:22px;">
+        <input type="checkbox" data-key="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} style="opacity:0;width:0;height:0;position:absolute;">
+        <span style="position:absolute;inset:0;background:${checked ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};border-radius:99px;transition:all 0.2s;cursor:${disabled ? 'not-allowed' : 'pointer'};"></span>
+        <span style="position:absolute;top:2px;left:${checked ? '20px' : '2px'};width:18px;height:18px;background:white;border-radius:50%;transition:all 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span>
+      </div>
+    </label>
+  `;
 }
 
 // ── Modal Helper ──────────────────────────────────────────────

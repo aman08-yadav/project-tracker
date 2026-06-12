@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { createTask, getTasks, updateTaskStatus, updateTask, deleteTask } = require('../controllers/taskController');
 const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
@@ -12,7 +13,9 @@ router.get('/project/:projectId', (req, res, next) => {
   req.query.projectId = req.params.projectId;
   return getTasks(req, res, next);
 });
-router.post('/', [
+
+// Only faculty can create tasks
+router.post('/', roleMiddleware('faculty'), [
   body('title').trim().notEmpty().withMessage('Task title is required.'),
   body('projectId').notEmpty().withMessage('projectId is required.'),
   body('priority').optional().isIn(['low', 'medium', 'high']),

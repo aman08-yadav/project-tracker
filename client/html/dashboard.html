@@ -168,7 +168,7 @@
 
   <script type="module">
     import { ApiClient } from '../js/api.js';
-    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, animateCounter, avatarInitials } from '../js/ui.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, timeAgo, animateCounter, avatarInitials, showBrowserNotification } from '../js/ui.js';
 
     initToast();
     const user = requireAuth();
@@ -204,6 +204,7 @@
       `;
     }
 
+    const esc = window.escapeHtml || ((s) => s);
     const actionIcons = { task_created: '📝', task_updated: '🔄', task_completed: '✅', file_uploaded: '📎', member_added: '👤', project_created: '📁', default: '⚡' };
     const actionLabels = { task_created: 'created a task', task_updated: 'updated a task', task_completed: '✅ completed a task', file_uploaded: 'uploaded a file', member_added: 'added a member', project_created: 'created a project' };
 
@@ -310,8 +311,8 @@
               <div class="timeline-dot">${actionIcons[log.action] || actionIcons.default}</div>
               <div class="timeline-content">
                 <div class="timeline-action">
-                  <strong>${log.user?.name || 'Someone'}</strong> ${actionLabels[log.action] || log.action}
-                  ${log.metadata?.title ? `— <em style="color:var(--text-primary);">${log.metadata.title}</em>` : ''}
+                  <strong>${esc(log.user?.name || 'Someone')}</strong> ${actionLabels[log.action] || log.action}
+                  ${log.metadata?.title ? `— <em style="color:var(--text-primary);">${esc(log.metadata.title)}</em>` : ''}
                 </div>
                 <div class="timeline-meta">
                   <span class="timeline-time">${timeAgo(log.createdAt)}</span>
@@ -394,8 +395,8 @@
                         <td style="padding:12px 10px;display:flex;align-items:center;gap:10px;">
                           <div style="width:32px;height:32px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.7rem;">${avatarInitials(p.student.name)}</div>
                           <div>
-                            <div style="font-weight:600;color:var(--text-primary);">${p.student.name}</div>
-                            <div style="font-size:0.75rem;color:var(--text-muted);">${p.student.email}</div>
+                            <div style="font-weight:600;color:var(--text-primary);">${esc(p.student.name)}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);">${esc(p.student.email)}</div>
                           </div>
                         </td>
                         <td style="text-align:center;padding:12px 10px;">${p.projectsCount}</td>
@@ -436,6 +437,9 @@
 
       const socket = io();
 
+      // Register user for targeted notifications
+      socket.emit('register:user', { userId: user.id });
+
       // Join user's projects for real-time updates
       try {
         const res = await ApiClient.get('/projects');
@@ -444,17 +448,23 @@
         });
       } catch (_) {}
 
+      // Listen for server-pushed notifications
+      socket.on('notification:new', (notification) => {
+        if (window.addNotification) {
+          window.addNotification(notification);
+        }
+        // Also fire browser push notification
+        showBrowserNotification(
+          notification.title || 'Notification',
+          notification.message || ''
+        );
+      });
+
       // Refresh stats when tasks change
       socket.on('task:updated', (data) => {
-        if (window.addNotification && data.updatedBy !== user.name) {
-           window.addNotification({ action: 'task_updated', user: { name: data.updatedBy }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
-        }
         loadDashboard();
       });
       socket.on('task:created', (data) => {
-        if (window.addNotification && data.task?.assignedTo !== user.id) {
-           window.addNotification({ action: 'task_created', user: { name: 'Someone' }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
-        }
         loadDashboard();
       });
     };

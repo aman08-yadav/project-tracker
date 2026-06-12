@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
@@ -131,6 +132,11 @@ const addMember = async (req, res, next) => {
 
     if (!memberId) {
       return res.status(400).json({ success: false, message: 'memberId is required.' });
+    }
+
+    // Validate memberId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ success: false, message: 'Invalid memberId format.' });
     }
 
     const project = await Project.findById(req.params.id);

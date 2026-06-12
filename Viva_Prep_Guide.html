@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viva Prep Guide — ProjectHub</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #e2e8f0;
+      background-color: #0f172a;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    h1 {
+      color: #38bdf8;
+      border-bottom: 2px solid #1e293b;
+      padding-bottom: 10px;
+      margin-bottom: 30px;
+    }
+    h2 {
+      color: #818cf8;
+      margin-top: 40px;
+    }
+    h3 {
+      color: #cbd5e1;
+    }
+    .qa-box {
+      background: #1e293b;
+      border-left: 4px solid #8b5cf6;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+    .question {
+      font-weight: bold;
+      color: #f8fafc;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    .answer {
+      color: #94a3b8;
+    }
+    ul {
+      background: #1e293b;
+      padding: 20px 20px 20px 40px;
+      border-radius: 8px;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+    strong {
+      color: #f8fafc;
+    }
+    code {
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ProjectHub — Viva Preparation Guide</h1>
+  <p>This guide breaks down everything you need to know about your backend in simple terms, plus the exact questions your teacher is likely to ask and how to answer them confidently.</p>
+
+  <h2>🧠 Part 1: How Your Backend Works (Simple Explanation)</h2>
+  <p>Your backend follows the <strong>MERN stack</strong> architecture (MongoDB, Express, React/Vanilla JS, Node.js), but using pure HTML/JS for the frontend. It is built using the <strong>MVC Pattern</strong> (Model-View-Controller).</p>
+
+  <h3>The Core Technologies Used:</h3>
+  <ul>
+    <li><strong>Node.js & Express:</strong> The engine that runs your server. Express handles the API routes (e.g., when the frontend asks for <code>/api/v1/projects</code>).</li>
+    <li><strong>MongoDB Atlas & Mongoose:</strong> The database. It is hosted in the cloud (Atlas). Mongoose is the tool used to define the structure of your data (Models like <code>User</code>, <code>Project</code>, <code>Task</code>).</li>
+    <li><strong>JSON Web Tokens (JWT):</strong> The security system. When a user logs in, the server gives them a token. The frontend sends this token with every request to prove who the user is.</li>
+    <li><strong>Socket.IO:</strong> The real-time engine. It keeps a constant, open connection between the browser and the server so chat messages appear instantly without refreshing the page.</li>
+    <li><strong>Multer:</strong> The file-handling tool. When a student uploads a file, Multer catches it, saves it to the <code>/uploads</code> folder on the server, and saves the file's metadata to MongoDB.</li>
+  </ul>
+
+  <h3>How the Files are Organized:</h3>
+  <ul>
+    <li><code>models/</code> - Defines the shape of the data (e.g., a Task must have a title, status, and assigned user).</li>
+    <li><code>controllers/</code> - The actual logic. (e.g., <code>taskController.js</code> has the code to create a task, update a task, or delete it).</li>
+    <li><code>routes/</code> - The URLs. This connects a URL (like <code>/tasks</code>) to the correct Controller logic.</li>
+    <li><code>middleware/</code> - The "bouncers" at the door. <code>authMiddleware.js</code> checks if a user is logged in before letting them access data. <code>roleMiddleware.js</code> checks if the user is a <code>faculty</code> member before letting them delete a project.</li>
+  </ul>
+
+  <h2>🎯 Part 2: Top Viva Questions & Answers</h2>
+
+  <div class="qa-box">
+    <div class="question">Q1. "What happens to the data if the Render server restarts? Is it saved in memory?"</div>
+    <div class="answer"><strong>Answer:</strong> "No, the data is completely persistent. The backend connects directly to <strong>MongoDB Atlas</strong>, which is a separate cloud database. Even if the Render server sleeps or restarts, the data is safe in Atlas."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #38bdf8;">
+    <div class="question">Q2. "How did you implement Authentication and Security?"</div>
+    <div class="answer"><strong>Answer:</strong> "I used <strong>JWT (JSON Web Tokens)</strong>. When a user logs in, the backend generates a token using a secret key and sends it to the frontend, which stores it in <code>localStorage</code>. Every API request sends this token in the Authorization header. On the backend, my <code>authMiddleware</code> verifies the token before allowing access to the database."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #10b981;">
+    <div class="question">Q3. "How is the Leaderboard score calculated? Can students fake it?"</div>
+    <div class="answer"><strong>Answer:</strong> "No, it cannot be faked. The leaderboard uses a custom algorithm on the backend. It fetches the total number of tasks marked 'completed' by a student (worth 10 points each) and the total number of files that a Faculty member has specifically 'approved' (worth 5 points each). It aggregates this directly from MongoDB."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #f59e0b;">
+    <div class="question">Q4. "Explain how the real-time chat works."</div>
+    <div class="answer"><strong>Answer:</strong> "I used <strong>Socket.IO</strong> for event-driven, real-time communication. When a user opens a project, the frontend emits a <code>join:project</code> event. The backend puts them into a specific 'room' just for that project. When someone sends a message, it is saved to MongoDB first, and then broadcasted only to the users in that specific room."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #ef4444;">
+    <div class="question">Q5. "How did you prevent students from changing things they shouldn't?"</div>
+    <div class="answer"><strong>Answer:</strong> "I implemented <strong>Role-Based Access Control (RBAC)</strong>. On the backend, there is a <code>roleMiddleware</code> that protects specific routes. For example, only a user with the <code>faculty</code> role can create projects, delete tasks, or approve files. If a student tries to send an unauthorized request, the backend will block it with a 403 Forbidden error."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #ec4899;">
+    <div class="question">Q6. "Did you implement any form validation or security against XSS?"</div>
+    <div class="answer"><strong>Answer:</strong> "Yes, on the frontend I used <code>maxlength</code> and <code>required</code> attributes to prevent massive data dumps. For security, specifically in the chat, I wrote an <code>escapeHtml</code> function that sanitizes user input. It converts characters like <code>&lt;</code> and <code>&gt;</code> into safe HTML entities so malicious scripts cannot be injected into the chat."</div>
+  </div>
+
+  <div class="qa-box" style="border-left-color: #6366f1;">
+    <div class="question">Q7. "How do you handle file uploads?"</div>
+    <div class="answer"><strong>Answer:</strong> "I used an npm package called <strong>Multer</strong>. When a file is uploaded, Multer intercepts the multipart form data, saves the physical file to the server's <code>uploads/</code> directory, and then the controller saves the file's metadata (original name, size, uploader ID) to MongoDB. The frontend can then download the file via a static route."</div>
+  </div>
+
+  <div style="text-align: center; margin-top: 50px; color: #64748b;">
+    <p>Good luck! You have built an incredibly complex and secure application. Answer confidently!</p>
+  </div>
+
+</body>
+</html>

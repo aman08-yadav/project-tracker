@@ -86,7 +86,7 @@
 
   <script type="module">
     import { ApiClient } from '../js/api.js';
-    import { requireAuth, buildSidebar, buildTopbar, showToast, openModal, fireConfetti, avatarInitials } from '../js/ui.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, openModal, fireConfetti, avatarInitials, showBrowserNotification } from '../js/ui.js';
 
     const user = requireAuth();
     if (!user) throw new Error('Not authenticated');
@@ -217,22 +217,23 @@
         card.setAttribute('data-status', task.status);
         card.setAttribute('data-priority', task.priority || 'medium');
         
+        const esc = window.escapeHtml || ((s) => s);
         card.innerHTML = `
-          <div class="task-title">${task.title}</div>
-          <div class="task-desc">${task.description || '<span style="opacity:0.5;font-style:italic">No description</span>'}</div>
+          <div class="task-title">${esc(task.title)}</div>
+          <div class="task-desc">${esc(task.description) || '<span style="opacity:0.5;font-style:italic">No description</span>'}</div>
           
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
-            <span class="badge badge-${task.priority || 'medium'}">${task.priority || 'medium'}</span>
-            ${task.project?.name ? `<span style="font-size:0.7rem;color:var(--text-muted);border:1px solid var(--border);padding:2px 6px;border-radius:4px;">${task.project.name}</span>` : ''}
+            <span class="badge badge-${task.priority || 'medium'}">${esc(task.priority || 'medium')}</span>
+            ${task.project?.name ? `<span style="font-size:0.7rem;color:var(--text-muted);border:1px solid var(--border);padding:2px 6px;border-radius:4px;">${esc(task.project.name)}</span>` : ''}
           </div>
           
           <div class="task-meta">
             ${task.assignedTo ? `
-              <div class="task-assignee" title="${task.assignedTo.name}">
+              <div class="task-assignee"              title="${esc(task.assignedTo.name)}">
                 ${task.assignedTo.avatar 
                   ? `<img src="${task.assignedTo.avatar}" alt="">` 
                   : `<div class="avatar-fallback">${avatarInitials(task.assignedTo.name)}</div>`}
-                <span>${task.assignedTo.name.split(' ')[0]}</span>
+                <span>${esc(task.assignedTo.name.split(' ')[0])}</span>
               </div>
             ` : '<span class="text-xs text-muted">Unassigned</span>'}
             
@@ -621,22 +622,28 @@
       await loadScript();
 
       const socket = io();
+
+      // Register user for targeted notifications
+      socket.emit('register:user', { userId: user.id });
+
       currentProjects.forEach(p => {
         socket.emit('join:project', { projectId: p._id, userId: user.id, userName: user.name });
       });
 
-      socket.on('task:created', (data) => {
-        if (window.addNotification && data.task?.assignedTo !== user.id) {
-           window.addNotification({ action: 'task_created', user: { name: 'Someone' }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
+      // Listen for server-pushed notifications
+      socket.on('notification:new', (notification) => {
+        if (window.addNotification) {
+          window.addNotification(notification);
         }
-        loadTasks();
+        // Also fire browser push notification
+        showBrowserNotification(
+          notification.title || 'Notification',
+          notification.message || ''
+        );
       });
-      socket.on('task:updated', (data) => {
-        if (window.addNotification && data.updatedBy !== user.name) {
-           window.addNotification({ action: 'task_updated', user: { name: data.updatedBy }, metadata: { title: data.task?.title }, project: { name: 'Project' }, createdAt: new Date() });
-        }
-        loadTasks();
-      });
+
+      socket.on('task:created', () => loadTasks());
+      socket.on('task:updated', () => loadTasks());
       socket.on('task:deleted', loadTasks);
     };
 

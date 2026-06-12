@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const FileMetadata = require('../models/FileMetadata');
 const ActivityLog = require('../models/ActivityLog');
 const Project = require('../models/Project');
+const { createNotification } = require('./notificationController');
 
 const uploadFile = async (req, res, next) => {
   try {
@@ -82,15 +83,15 @@ const getFiles = async (req, res, next) => {
     const filter = {};
     if (req.query.projectId) filter.project = req.query.projectId;
     
-    // If not faculty, maybe restrict to files of projects the user is in. 
-    // For now, let's keep it simple or restrict to user's projects.
+    // Restrict students to files from their projects only
     if (req.user.role !== 'faculty') {
-      filter.project = { $in: req.user.projectIds };
       if (req.query.projectId) {
         if (!req.user.projectIds.map(id => id.toString()).includes(req.query.projectId)) {
            return res.json({ success: true, files: [] });
         }
         filter.project = req.query.projectId;
+      } else {
+        filter.project = { $in: req.user.projectIds || [] };
       }
     }
 
@@ -173,6 +174,28 @@ const reviewFile = async (req, res, next) => {
       io.to(file.project.toString()).emit('file:reviewed', {
         fileId: file._id, status, originalName: file.originalName, reviewedBy: req.user.name,
       });
+    }
+
+    // ── Send notification to file uploader ──────────────────
+    if (file.uploadedBy.toString() !== req.user._id.toString()) {
+      const notificationType = status === 'approved' ? 'file_approved' : 'file_rejected';
+      const title = status === 'approved' ? 'File Approved' : 'File Rejected';
+      const message = status === 'approved'
+        ? `${req.user.name} approved your file: ${file.originalName}`
+        : `${req.user.name} rejected your file: ${file.originalName}${reviewNote ? ` — ${reviewNote}` : ''}`;
+
+      const notification = await createNotification({
+        recipientId: file.uploadedBy,
+        senderId: req.user._id,
+        type: notificationType,
+        title,
+        message,
+        projectId: file.project,
+      });
+
+      if (io && notification) {
+        io.sendNotification(file.uploadedBy.toString(), notification);
+      }
     }
 
     res.json({ success: true, message: `File ${status}.`, file });

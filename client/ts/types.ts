@@ -92,3 +92,16 @@ export interface ChatMessage {
   user: Pick<User, 'id' | 'name' | 'avatar'>;
   timestamp: string;
 }
+
+export interface Notification {
+  _id: string;
+  recipient: string | User;
+  sender: string | User;
+  type: 'task_assigned' | 'task_completed' | 'task_updated' | 'file_uploaded' | 'file_approved' | 'file_rejected' | 'member_added' | 'project_created';
+  title: string;
+  message: string;
+  project?: string | { _id: string; name: string };
+  taskId?: string | { _id: string; title: string };
+  read: boolean;
+  createdAt: string;
+}

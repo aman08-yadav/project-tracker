@@ -13,58 +13,147 @@
   <div id="toast-container"></div>
   <div class="app-layout">
     <div class="main-content">
-      <div class="page-header animate-in">
-        <h1>File Manager</h1>
-        <p class="text-muted">Upload and manage project files</p>
-      </div>
-
-      <!-- Upload Zone -->
-      <div class="glass-card" style="margin-bottom:24px;">
-        <div class="upload-zone" id="upload-zone">
-          <div class="upload-icon">📤</div>
-          <h3>Drag & Drop files here</h3>
-          <p>or click to browse — Max 20MB per file</p>
-          <input type="file" id="file-input" style="display:none" multiple>
-        </div>
-
-        <div id="upload-options" style="margin-top:20px;display:none;">
-          <div class="form-group">
-            <label>Select Project</label>
-            <select id="upload-project" class="form-control"></select>
-          </div>
-          <div id="file-queue" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
-          <button class="btn btn-primary" id="upload-btn" style="width:100%;">
-            <span id="upload-btn-text">📤 Upload Files</span>
-            <span class="spinner" id="upload-spinner" style="display:none;"></span>
-          </button>
-        </div>
-
-        <div id="upload-progress" style="display:none;margin-top:16px;">
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Uploading…</span><span id="progress-pct">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="progress-bar-fill" style="width:0%;transition:width 0.3s;"></div></div>
-          </div>
+      <div class="page-header animate-in flex-between">
+        <div>
+          <h1>File Manager</h1>
+          <p class="text-muted">Upload, review, and manage project files</p>
         </div>
       </div>
 
-      <!-- File List -->
-      <div class="glass-card">
-        <div class="flex-between" style="margin-bottom:20px;">
-          <h3 style="font-size:1rem;">Uploaded Files</h3>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <div class="search-input-wrap">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="file-search" class="form-control" placeholder="Search files…">
+      <!-- Tab Navigation for Faculty -->
+      <div class="filter-bar animate-in faculty-only" style="display:none;" id="faculty-tabs">
+        <button class="role-btn active" data-tab="upload">📤 Upload Files</button>
+        <button class="role-btn" data-tab="review">📋 Review Queue</button>
+        <button class="role-btn" data-tab="ranking">🏆 Student Rankings</button>
+      </div>
+
+      <!-- ═══ TAB 1: Upload Zone (Students & Faculty) ═══ -->
+      <div id="tab-upload">
+        <div class="glass-card" style="margin-bottom:24px;">
+          <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📤</div>
+            <h3>Drag & Drop files here</h3>
+            <p>or click to browse — Max 20MB per file</p>
+            <input type="file" id="file-input" style="display:none" multiple>
+          </div>
+
+          <div id="upload-options" style="margin-top:20px;display:none;">
+            <div class="form-group">
+              <label>Select Project</label>
+              <select id="upload-project" class="form-control"></select>
             </div>
-            <select id="file-project-filter" class="form-control" style="width:auto;min-width:160px;">
-              <option value="">All Projects</option>
-            </select>
+            <div id="file-queue" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+            <button class="btn btn-primary" id="upload-btn" style="width:100%;">
+              <span id="upload-btn-text">📤 Upload Files</span>
+              <span class="spinner" id="upload-spinner" style="display:none;"></span>
+            </button>
+          </div>
+
+          <div id="upload-progress" style="display:none;margin-top:16px;">
+            <div class="progress-wrap">
+              <div class="progress-label"><span>Uploading…</span><span id="progress-pct">0%</span></div>
+              <div class="progress-bar"><div class="progress-fill" id="progress-bar-fill" style="width:0%;transition:width 0.3s;"></div></div>
+            </div>
           </div>
         </div>
-        <div id="files-list" style="display:flex;flex-direction:column;gap:8px;">
-          <div class="skeleton" style="height:64px;"></div>
-          <div class="skeleton" style="height:64px;margin-top:8px;"></div>
-          <div class="skeleton" style="height:64px;margin-top:8px;"></div>
+
+        <!-- File List -->
+        <div class="glass-card">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">Uploaded Files</h3>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="file-search" class="form-control" placeholder="Search files…">
+              </div>
+              <select id="file-project-filter" class="form-control" style="width:auto;min-width:160px;">
+                <option value="">All Projects</option>
+              </select>
+            </div>
+          </div>
+          <div id="files-list" style="display:flex;flex-direction:column;gap:8px;">
+            <div class="skeleton" style="height:64px;"></div>
+            <div class="skeleton" style="height:64px;margin-top:8px;"></div>
+            <div class="skeleton" style="height:64px;margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 2: Faculty Review Queue ═══ -->
+      <div id="tab-review" style="display:none;">
+        <!-- Review Stats -->
+        <div class="stats-grid animate-in" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+          <div class="stat-card violet">
+            <div class="stat-icon">📥</div>
+            <div class="stat-value" id="review-total">0</div>
+            <div class="stat-label">Total Files</div>
+          </div>
+          <div class="stat-card rose">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-value" id="review-pending">0</div>
+            <div class="stat-label">Pending Review</div>
+          </div>
+          <div class="stat-card emerald">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" id="review-approved">0</div>
+            <div class="stat-label">Approved</div>
+          </div>
+          <div class="stat-card cyan">
+            <div class="stat-icon">❌</div>
+            <div class="stat-value" id="review-rejected">0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar animate-in">
+          <select id="review-project-filter" class="form-control" style="width:auto;min-width:180px;">
+            <option value="">All Projects</option>
+          </select>
+          <select id="review-status-filter" class="form-control" style="width:auto;min-width:160px;">
+            <option value="pending">⏳ Pending</option>
+            <option value="approved">✅ Approved</option>
+            <option value="rejected">❌ Rejected</option>
+            <option value="all">📋 All</option>
+          </select>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button class="btn btn-ghost btn-sm" id="select-all-review-btn" style="display:none;">☑️ Select All Pending</button>
+            <button class="btn btn-primary btn-sm" id="bulk-approve-btn" style="display:none;">✅ Approve Selected</button>
+            <button class="btn btn-danger btn-sm" id="bulk-reject-btn" style="display:none;">❌ Reject Selected</button>
+          </div>
+        </div>
+
+        <!-- Review Queue -->
+        <div class="glass-card animate-in">
+          <h3 style="font-size:1rem;margin-bottom:20px;">📋 Files to Review</h3>
+          <div id="review-queue-list" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="skeleton" style="height:80px;"></div>
+            <div class="skeleton" style="height:80px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 3: Student Rankings ═══ -->
+      <div id="tab-ranking" style="display:none;">
+        <div class="glass-card animate-in" style="margin-bottom:24px;">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">🏆 Student Rankings</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="rank-project-filter" class="form-control" style="width:auto;min-width:180px;">
+                <option value="">Select Project</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="export-pdf-btn" style="display:none;">📄 Export PDF</button>
+            </div>
+          </div>
+          <div id="ranking-table-wrap" style="overflow-x:auto;">
+            <div id="ranking-content">
+              <div class="empty-state">
+                <div class="icon">🏆</div>
+                <h3>Select a project to view rankings</h3>
+                <p>Choose a project from the dropdown above to assign ranks and scores to students.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -72,16 +161,22 @@
 
   <script type="module">
     import { ApiClient } from '../js/api.js';
-    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, formatBytes, timeAgo } from '../js/ui.js';
+    import { requireAuth, buildSidebar, buildTopbar, showToast, initToast, formatBytes, timeAgo, openModal, avatarInitials } from '../js/ui.js';
 
     initToast();
     const user = requireAuth(); if (!user) throw new Error();
     buildSidebar('upload');
     buildTopbar('Files');
 
+    const isFaculty = user.role === 'faculty';
     let selectedFiles = [];
     let projects = [];
     let allFiles = [];
+
+    // Show faculty tabs
+    if (isFaculty) {
+      document.querySelectorAll('.faculty-only').forEach(el => el.style.display = 'flex');
+    }
 
     const fileIcons = {
       pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
@@ -95,21 +190,46 @@
       return fileIcons[ext] || fileIcons.default;
     }
 
-    // Load projects
+    const esc = window.escapeHtml || (s => s);
+
+    // ── Tab Switching ──
+    document.querySelectorAll('#faculty-tabs .role-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#faculty-tabs .role-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        document.getElementById('tab-upload').style.display = tab === 'upload' ? 'block' : 'none';
+        document.getElementById('tab-review').style.display = tab === 'review' ? 'block' : 'none';
+        document.getElementById('tab-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
+
+        if (tab === 'review') loadReviewQueue();
+        if (tab === 'ranking') loadRankingProjects();
+      });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  UPLOAD ZONE (Original)
+    // ══════════════════════════════════════════════════════════
+
     async function loadProjects() {
       try {
         const res = await ApiClient.get('/projects');
         projects = res.projects || [];
-        const sel = document.getElementById('upload-project');
-        const filter = document.getElementById('file-project-filter');
-        projects.forEach(p => {
-          sel.innerHTML += `<option value="${p._id}">${p.name}</option>`;
-          filter.innerHTML += `<option value="${p._id}">${p.name}</option>`;
+        const selectors = ['upload-project', 'file-project-filter', 'review-project-filter', 'rank-project-filter'];
+        selectors.forEach(id => {
+          const sel = document.getElementById(id);
+          if (!sel) return;
+          // Keep first option
+          const first = sel.options[0];
+          sel.innerHTML = '';
+          sel.appendChild(first);
+          projects.forEach(p => {
+            sel.innerHTML += `<option value="${p._id}">${esc(p.name)}</option>`;
+          });
         });
       } catch (_) {}
     }
 
-    // Upload Zone
     const zone = document.getElementById('upload-zone');
     const fileInput = document.getElementById('file-input');
 
@@ -126,13 +246,12 @@
       selectedFiles = files.filter(f => f.size <= 20 * 1024 * 1024);
       if (selectedFiles.length === 0) { showToast('warning', 'Too large', 'Files must be under 20MB'); return; }
       document.getElementById('upload-options').style.display = 'block';
-
       const queue = document.getElementById('file-queue');
       queue.innerHTML = selectedFiles.map((f, i) => `
         <div class="file-card" style="animation-delay:${i * 0.05}s;">
           <div class="file-icon">${getIcon(f.name)}</div>
           <div class="file-info">
-            <div class="file-name">${f.name}</div>
+            <div class="file-name">${esc(f.name)}</div>
             <div class="file-meta">${formatBytes(f.size)}</div>
           </div>
           <button onclick="removeFile(${i})" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:1rem;">✕</button>
@@ -191,15 +310,13 @@
         const url = projFilter ? `/files?projectId=${projFilter}` : '/files';
         const res = await ApiClient.get(url);
         allFiles = res.files || [];
-        const filtered = allFiles.filter(f =>
-          !search || f.originalName?.toLowerCase().includes(search)
-        );
+        const filtered = allFiles.filter(f => !search || f.originalName?.toLowerCase().includes(search));
         if (filtered.length === 0) {
           list.innerHTML = `<div class="empty-state"><div class="icon">📎</div><h3>No files yet</h3><p>Upload project files to get started</p></div>`;
           return;
         }
         list.innerHTML = filtered.map(f => {
-          const statusBadge = f.status === 'approved' 
+          const statusBadge = f.status === 'approved'
             ? '<span style="background:rgba(16,185,129,0.15);color:#34d399;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600;">✅ Approved</span>'
             : f.status === 'rejected'
             ? '<span style="background:rgba(244,63,94,0.15);color:#fb7185;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600;">❌ Rejected</span>'
@@ -209,27 +326,27 @@
           <div class="file-card" style="flex-wrap:wrap;">
             <div class="file-icon">${getIcon(f.originalName || '')}</div>
             <div class="file-info" style="flex:1;min-width:200px;">
-              <div class="file-name">${f.originalName || 'Unknown file'}</div>
+              <div class="file-name">${esc(f.originalName || 'Unknown file')}</div>
               <div class="file-meta">
-                Uploaded by <strong>${f.uploadedBy?.name || 'Unknown'}</strong> · <span title="${new Date(f.createdAt).toLocaleString()}">${timeAgo(f.createdAt)} (${new Date(f.createdAt).toLocaleDateString()})</span> · ${f.project?.name || ''}
+                Uploaded by <strong>${esc(f.uploadedBy?.name || 'Unknown')}</strong> · <span title="${new Date(f.createdAt).toLocaleString()}">${timeAgo(f.createdAt)}</span> · ${esc(f.project?.name || '')}
               </div>
-              ${f.description ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;font-style:italic;">${f.description}</div>` : ''}
-              ${f.reviewNote ? `<div style="font-size:0.7rem;color:var(--cyan);margin-top:2px;">💬 ${f.reviewNote}</div>` : ''}
+              ${f.description ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;font-style:italic;">${esc(f.description)}</div>` : ''}
+              ${f.reviewNote ? `<div style="font-size:0.7rem;color:var(--cyan);margin-top:2px;">💬 ${esc(f.reviewNote)}</div>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               ${statusBadge}
               <div class="file-size">${formatBytes(f.size)}</div>
               <a href="/api/v1/files/download/${f._id}" class="btn btn-ghost btn-sm" title="Download">⬇️</a>
-              ${user.role === 'faculty' && f.status === 'pending' ? `
+              ${isFaculty && f.status === 'pending' ? `
                 <button class="btn btn-ghost btn-sm approve-btn" data-id="${f._id}" title="Approve" style="color:var(--emerald);font-size:0.85rem;">✅</button>
                 <button class="btn btn-ghost btn-sm reject-btn" data-id="${f._id}" title="Reject" style="color:var(--rose);font-size:0.85rem;">❌</button>
               ` : ''}
-              ${(f.uploadedBy?._id === user.id || user.role === 'faculty') ? `<button class="btn btn-ghost btn-sm delete-file-btn" data-id="${f._id}" title="Delete" style="color:var(--rose);">🗑️</button>` : ''}
+              ${(f.uploadedBy?._id === user.id || isFaculty) ? `<button class="btn btn-ghost btn-sm delete-file-btn" data-id="${f._id}" title="Delete" style="color:var(--rose);">🗑️</button>` : ''}
             </div>
           </div>
         `}).join('');
-        
-        // Wire up delete buttons
+
+        // Wire up buttons
         list.querySelectorAll('.delete-file-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (!confirm('Delete this file?')) return;
@@ -237,45 +354,526 @@
               await ApiClient.delete(`/files/${btn.dataset.id}`);
               showToast('success', 'Deleted', 'File removed.');
               loadFiles();
-            } catch (err) {
-              showToast('error', 'Error', err.message);
-            }
+            } catch (err) { showToast('error', 'Error', err.message); }
           });
         });
 
-        // Wire up approve buttons (faculty)
         list.querySelectorAll('.approve-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            try {
-              await ApiClient.patch(`/files/${btn.dataset.id}/review`, { status: 'approved', reviewNote: 'Looks good!' });
-              showToast('success', 'Approved', 'File approved — student earns points!');
-              loadFiles();
-            } catch (err) {
-              showToast('error', 'Error', err.message);
-            }
-          });
+          btn.addEventListener('click', () => openReviewModal(btn.dataset.id, 'approved'));
         });
 
-        // Wire up reject buttons (faculty)
         list.querySelectorAll('.reject-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const reason = prompt('Reason for rejection (optional):') || 'Please upload the correct document.';
-            try {
-              await ApiClient.patch(`/files/${btn.dataset.id}/review`, { status: 'rejected', reviewNote: reason });
-              showToast('warning', 'Rejected', 'File rejected — student notified.');
-              loadFiles();
-            } catch (err) {
-              showToast('error', 'Error', err.message);
-            }
-          });
+          btn.addEventListener('click', () => openReviewModal(btn.dataset.id, 'rejected'));
         });
       } catch (_) {
         list.innerHTML = `<p class="text-muted text-sm">Failed to load files.</p>`;
       }
     }
 
-    document.getElementById('file-search').addEventListener('input', loadFiles);
-    document.getElementById('file-project-filter').addEventListener('change', loadFiles);
+    // ══════════════════════════════════════════════════════════
+    //  REVIEW MODAL — Enhanced with remarks textarea
+    // ══════════════════════════════════════════════════════════
+
+    function openReviewModal(fileId, defaultStatus) {
+      const file = allFiles.find(f => f._id === fileId);
+      const isApproved = defaultStatus === 'approved';
+
+      const modal = openModal(`
+        <div class="modal-header">
+          <h3>${isApproved ? '✅ Approve File' : '❌ Reject File'}</h3>
+          <button class="modal-close">×</button>
+        </div>
+        <div style="margin-bottom:20px;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.5rem;">${getIcon(file?.originalName || '')}</span>
+            <div>
+              <div style="font-weight:600;color:var(--text-primary);">${esc(file?.originalName || 'Unknown')}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted);">Uploaded by ${esc(file?.uploadedBy?.name || 'Unknown')} · ${formatBytes(file?.size || 0)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Remarks / Feedback</label>
+          <textarea id="review-remarks" class="form-control" rows="4" maxlength="500" placeholder="${isApproved ? 'e.g. Great work, well organized!' : 'e.g. Please fix the formatting and resubmit...'}"></textarea>
+        </div>
+
+        ${!isApproved ? `
+        <div class="form-group">
+          <label>Quick Rejection Reasons</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button class="btn btn-ghost btn-sm quick-reason" data-reason="Incomplete submission">Incomplete</button>
+            <button class="btn btn-ghost btn-sm quick-reason" data-reason="Wrong file format">Wrong format</button>
+            <button class="btn btn-ghost btn-sm quick-reason" data-reason="Does not meet requirements">Doesn't meet requirements</button>
+            <button class="btn btn-ghost btn-sm quick-reason" data-reason="Poor quality or unreadable">Poor quality</button>
+            <button class="btn btn-ghost btn-sm quick-reason" data-reason="Duplicate submission">Duplicate</button>
+          </div>
+        </div>
+        ` : ''}
+
+        <div style="display:flex;gap:12px;margin-top:24px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+          <button class="btn ${isApproved ? 'btn-primary' : 'btn-danger'}" id="submit-review-btn" style="flex:1;">
+            ${isApproved ? '✅ Approve & Send Feedback' : '❌ Reject & Notify Student'}
+          </button>
+        </div>
+      `);
+
+      // Quick reason buttons
+      modal.querySelectorAll('.quick-reason').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('review-remarks').value = btn.dataset.reason;
+        });
+      });
+
+      // Submit
+      document.getElementById('submit-review-btn').addEventListener('click', async () => {
+        const remarks = document.getElementById('review-remarks').value.trim();
+        try {
+          await ApiClient.patch(`/files/${fileId}/review`, {
+            status: defaultStatus,
+            reviewNote: remarks || (isApproved ? 'Approved' : 'No reason provided'),
+          });
+          showToast('success', isApproved ? 'Approved' : 'Rejected', `${file?.originalName} has been ${defaultStatus}.`);
+          document.querySelector('.modal-overlay')?.remove();
+          loadFiles();
+        } catch (err) {
+          showToast('error', 'Error', err.message);
+        }
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  TAB 2: Faculty Review Queue
+    // ══════════════════════════════════════════════════════════
+
+    let reviewQueueFiles = [];
+    let selectedReviewIds = new Set();
+
+    async function loadReviewQueue() {
+      const projectId = document.getElementById('review-project-filter').value;
+      const status = document.getElementById('review-status-filter').value;
+      const list = document.getElementById('review-queue-list');
+      selectedReviewIds.clear();
+      updateBulkButtons();
+
+      try {
+        let url = '/ranking/review-queue?';
+        if (projectId) url += `projectId=${projectId}&`;
+        if (status) url += `status=${status}`;
+
+        const res = await ApiClient.get(url);
+        reviewQueueFiles = res.files || [];
+        const stats = res.stats || {};
+
+        document.getElementById('review-total').textContent = stats.total || 0;
+        document.getElementById('review-pending').textContent = stats.pending || 0;
+        document.getElementById('review-approved').textContent = stats.approved || 0;
+        document.getElementById('review-rejected').textContent = stats.rejected || 0;
+
+        const hasPending = reviewQueueFiles.some(f => f.status === 'pending');
+        document.getElementById('select-all-review-btn').style.display = hasPending ? 'inline-flex' : 'none';
+
+        if (reviewQueueFiles.length === 0) {
+          list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><h3>No files to review</h3><p>All caught up! Check back later.</p></div>`;
+          return;
+        }
+
+        list.innerHTML = reviewQueueFiles.map(f => {
+          const statusColor = f.status === 'approved' ? 'var(--emerald)' : f.status === 'rejected' ? 'var(--rose)' : 'var(--amber)';
+          const statusLabel = f.status === 'approved' ? '✅ Approved' : f.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+          const isPending = f.status === 'pending';
+
+          return `
+          <div class="member-card" style="padding:16px;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:200px;">
+              ${isPending ? `<input type="checkbox" class="review-checkbox" data-id="${f._id}" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">` : ''}
+              <div class="file-icon" style="width:44px;height:44px;font-size:1.3rem;">${getIcon(f.originalName)}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;color:var(--text-primary);font-size:0.95rem;">${esc(f.originalName)}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">
+                  ${esc(f.uploadedBy?.name || 'Unknown')} · ${esc(f.project?.name || '')} · ${timeAgo(f.createdAt)}
+                </div>
+                ${f.description ? `<div style="font-size:0.75rem;color:var(--text-secondary);font-style:italic;margin-top:2px;">${esc(f.description)}</div>` : ''}
+                ${f.reviewNote ? `<div style="font-size:0.75rem;color:var(--cyan);margin-top:2px;">💬 ${esc(f.reviewNote)}</div>` : ''}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;color:${statusColor};border:1px solid ${statusColor}33;">${statusLabel}</span>
+              <a href="/api/v1/files/download/${f._id}" class="btn btn-ghost btn-sm" title="Download">⬇️</a>
+              ${isPending ? `
+                <button class="btn btn-sm review-approve-btn" data-id="${f._id}" style="background:rgba(16,185,129,0.15);color:var(--emerald);border:1px solid rgba(16,185,129,0.3);">✅ Approve</button>
+                <button class="btn btn-sm review-reject-btn" data-id="${f._id}" style="background:rgba(244,63,94,0.15);color:var(--rose);border:1px solid rgba(244,63,94,0.3);">❌ Reject</button>
+              ` : ''}
+            </div>
+          </div>
+        `}).join('');
+
+        // Wire up checkboxes
+        list.querySelectorAll('.review-checkbox').forEach(cb => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedReviewIds.add(cb.dataset.id);
+            else selectedReviewIds.delete(cb.dataset.id);
+            updateBulkButtons();
+          });
+        });
+
+        list.querySelectorAll('.review-approve-btn').forEach(btn => {
+          btn.addEventListener('click', () => openReviewModal(btn.dataset.id, 'approved'));
+        });
+        list.querySelectorAll('.review-reject-btn').forEach(btn => {
+          btn.addEventListener('click', () => openReviewModal(btn.dataset.id, 'rejected'));
+        });
+      } catch (_) {
+        list.innerHTML = `<p class="text-muted text-sm">Failed to load review queue.</p>`;
+      }
+    }
+
+    function updateBulkButtons() {
+      const count = selectedReviewIds.size;
+      const approveBtn = document.getElementById('bulk-approve-btn');
+      const rejectBtn = document.getElementById('bulk-reject-btn');
+      if (approveBtn) {
+        approveBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        approveBtn.textContent = `✅ Approve Selected (${count})`;
+      }
+      if (rejectBtn) {
+        rejectBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        rejectBtn.textContent = `❌ Reject Selected (${count})`;
+      }
+    }
+
+    // Select All Pending
+    document.getElementById('select-all-review-btn')?.addEventListener('click', () => {
+      const allChecked = selectedReviewIds.size === reviewQueueFiles.filter(f => f.status === 'pending').length;
+      document.querySelectorAll('.review-checkbox').forEach(cb => {
+        cb.checked = !allChecked;
+        if (cb.checked) selectedReviewIds.add(cb.dataset.id);
+        else selectedReviewIds.delete(cb.dataset.id);
+      });
+      updateBulkButtons();
+    });
+
+    // Bulk Approve
+    document.getElementById('bulk-approve-btn')?.addEventListener('click', async () => {
+      if (selectedReviewIds.size === 0) return;
+      const reason = prompt('Remarks for all approved files (optional):') || 'Approved';
+      try {
+        for (const id of selectedReviewIds) {
+          await ApiClient.patch(`/files/${id}/review`, { status: 'approved', reviewNote: reason });
+        }
+        showToast('success', 'Bulk Approved', `${selectedReviewIds.size} files approved!`);
+        selectedReviewIds.clear();
+        loadReviewQueue();
+      } catch (err) { showToast('error', 'Error', err.message); }
+    });
+
+    // Bulk Reject
+    document.getElementById('bulk-reject-btn')?.addEventListener('click', async () => {
+      if (selectedReviewIds.size === 0) return;
+      const reason = prompt('Rejection reason for all selected files:') || 'Please resubmit.';
+      try {
+        for (const id of selectedReviewIds) {
+          await ApiClient.patch(`/files/${id}/review`, { status: 'rejected', reviewNote: reason });
+        }
+        showToast('warning', 'Bulk Rejected', `${selectedReviewIds.size} files rejected.`);
+        selectedReviewIds.clear();
+        loadReviewQueue();
+      } catch (err) { showToast('error', 'Error', err.message); }
+    });
+
+    document.getElementById('review-project-filter')?.addEventListener('change', loadReviewQueue);
+    document.getElementById('review-status-filter')?.addEventListener('change', loadReviewQueue);
+
+    // ══════════════════════════════════════════════════════════
+    //  TAB 3: Student Rankings
+    // ══════════════════════════════════════════════════════════
+
+    let rankingStudents = [];
+
+    async function loadRankingProjects() {
+      // Projects already loaded in loadProjects()
+    }
+
+    document.getElementById('rank-project-filter')?.addEventListener('change', async () => {
+      const projectId = document.getElementById('rank-project-filter').value;
+      if (!projectId) {
+        document.getElementById('ranking-content').innerHTML = `
+          <div class="empty-state"><div class="icon">🏆</div><h3>Select a project</h3></div>`;
+        return;
+      }
+
+      try {
+        // Get project members
+        const projRes = await ApiClient.get(`/projects/${projectId}`);
+        const members = (projRes.project?.members || []).filter(m => (m.user?.role || m.role) === 'student');
+
+        // Get existing ranks
+        const rankRes = await ApiClient.get(`/ranking/ranks/${projectId}`);
+        const existingRanks = rankRes.ranks || [];
+
+        // Get review stats per student
+        const reviewRes = await ApiClient.get(`/ranking/review-queue?projectId=${projectId}&status=all`);
+        const studentSummary = reviewRes.studentSummary || [];
+
+        // Merge data
+        rankingStudents = members.map(m => {
+          const mu = m.user || m;
+          const existing = existingRanks.find(r => r.student?._id?.toString() === mu._id?.toString());
+          const summary = studentSummary.find(s => s.student?._id?.toString() === mu._id?.toString());
+
+          return {
+            studentId: mu._id,
+            name: mu.name,
+            email: mu.email,
+            avatar: mu.avatar,
+            rank: existing?.rank || null,
+            score: existing?.score || 0,
+            remarks: existing?.remarks || '',
+            filesApproved: summary?.approved || existing?.filesApproved || 0,
+            filesRejected: summary?.rejected || existing?.filesRejected || 0,
+            tasksCompleted: existing?.tasksCompleted || 0,
+          };
+        });
+
+        renderRankingTable(projectId);
+        document.getElementById('export-pdf-btn').style.display = 'inline-flex';
+      } catch (err) {
+        showToast('error', 'Error', 'Failed to load ranking data.');
+      }
+    });
+
+    function renderRankingTable(projectId) {
+      const content = document.getElementById('ranking-content');
+      const grades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', ''];
+
+      if (rankingStudents.length === 0) {
+        content.innerHTML = `<div class="empty-state"><div class="icon">👥</div><h3>No students in this project</h3></div>`;
+        return;
+      }
+
+      content.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+              <th style="text-align:left;padding:12px 8px;color:var(--text-muted);font-weight:600;">Student</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Files ✅</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Rejected ❌</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Tasks Done</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Score (0-100)</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Rank</th>
+              <th style="text-align:left;padding:12px 8px;color:var(--text-muted);font-weight:600;">Remarks</th>
+              <th style="text-align:center;padding:12px 8px;color:var(--text-muted);font-weight:600;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rankingStudents.map((s, i) => `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 8px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.7rem;">${(s.name || 'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}</div>
+                    <div>
+                      <div style="font-weight:600;color:var(--text-primary);">${esc(s.name)}</div>
+                      <div style="font-size:0.75rem;color:var(--text-muted);">${esc(s.email)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="text-align:center;padding:12px 8px;color:var(--emerald);font-weight:600;">${s.filesApproved}</td>
+                <td style="text-align:center;padding:12px 8px;color:var(--rose);">${s.filesRejected}</td>
+                <td style="text-align:center;padding:12px 8px;color:var(--cyan);">${s.tasksCompleted}</td>
+                <td style="text-align:center;padding:12px 8px;">
+                  <input type="number" min="0" max="100" value="${s.score}" class="form-control rank-score" data-idx="${i}" style="width:70px;text-align:center;padding:6px;font-size:0.85rem;">
+                </td>
+                <td style="text-align:center;padding:12px 8px;">
+                  <select class="form-control rank-grade" data-idx="${i}" style="width:80px;padding:6px;font-size:0.85rem;">
+                    ${grades.map(g => `<option value="${g}" ${s.rank === g ? 'selected' : ''}>${g || '—'}</option>`).join('')}
+                  </select>
+                </td>
+                <td style="padding:12px 8px;">
+                  <input type="text" value="${esc(s.remarks).replace(/"/g, '&quot;')}" class="form-control rank-remarks" data-idx="${i}" placeholder="Add remarks..." style="font-size:0.8rem;padding:6px 10px;min-width:150px;">
+                </td>
+                <td style="text-align:center;padding:12px 8px;">
+                  <button class="btn btn-primary btn-sm save-rank-btn" data-idx="${i}" data-project="${projectId}">💾 Save</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" id="save-all-ranks-btn" data-project="${projectId}">💾 Save All Rankings</button>
+        </div>
+      `;
+
+      // Individual save buttons
+      content.querySelectorAll('.save-rank-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idx = parseInt(btn.dataset.idx);
+          const projectId = btn.dataset.project;
+          const student = rankingStudents[idx];
+          const score = parseInt(content.querySelector(`.rank-score[data-idx="${idx}"]`).value) || 0;
+          const rank = content.querySelector(`.rank-grade[data-idx="${idx}"]`).value || null;
+          const remarks = content.querySelector(`.rank-remarks[data-idx="${idx}"]`).value;
+
+          try {
+            await ApiClient.post('/ranking/rank', { projectId, studentId: student.studentId, rank, score, remarks });
+            showToast('success', 'Saved', `Ranking saved for ${student.name}`);
+          } catch (err) {
+            showToast('error', 'Error', err.message);
+          }
+        });
+      });
+
+      // Save all button
+      document.getElementById('save-all-ranks-btn')?.addEventListener('click', async () => {
+        const projectId = document.getElementById('save-all-ranks-btn').dataset.project;
+        const ranks = rankingStudents.map((s, i) => ({
+          studentId: s.studentId,
+          score: parseInt(content.querySelector(`.rank-score[data-idx="${i}"]`).value) || 0,
+          rank: content.querySelector(`.rank-grade[data-idx="${i}"]`).value || null,
+          remarks: content.querySelector(`.rank-remarks[data-idx="${i}"]`).value,
+        }));
+
+        try {
+          await ApiClient.post('/ranking/rank/bulk', { projectId, ranks });
+          showToast('success', 'All Saved', `${ranks.length} rankings saved successfully!`);
+        } catch (err) {
+          showToast('error', 'Error', err.message);
+        }
+      });
+    }
+
+    // ── PDF Export ──
+    document.getElementById('export-pdf-btn')?.addEventListener('click', () => {
+      if (rankingStudents.length === 0) { showToast('warning', 'No data', 'Load a project ranking first.'); return; }
+      const projectName = document.getElementById('rank-project-filter').selectedOptions[0]?.textContent || 'Project';
+      exportRankingsPDF(projectName);
+    });
+
+    function exportRankingsPDF(projectName) {
+      const sorted = [...rankingStudents].sort((a, b) => b.score - a.score);
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html>
+<html><head><title>Rankings - ${projectName}</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1a1a2e; }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #7c3aed; color: white; padding: 10px 12px; text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 0.85rem; }
+  tr:nth-child(even) { background: #f8f7ff; }
+  .rank-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; }
+  .rank-a { background: #dcfce7; color: #166534; }
+  .rank-b { background: #dbeafe; color: #1e40af; }
+  .rank-c { background: #fef3c7; color: #92400e; }
+  .rank-d { background: #fee2e2; color: #991b1b; }
+  .rank-f { background: #f3f4f6; color: #374151; }
+  .footer { margin-top: 32px; font-size: 0.75rem; color: #999; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+  @media print { body { padding: 20px; } }
+</style></head><body>
+  <h1>🏆 Student Rankings</h1>
+  <div class="subtitle">${esc(projectName)} — Generated ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+  <table>
+    <thead><tr>
+      <th>#</th><th>Student</th><th>Files Approved</th><th>Files Rejected</th><th>Tasks Done</th><th>Score</th><th>Rank</th><th>Remarks</th>
+    </tr></thead>
+    <tbody>
+      ${sorted.map((s, i) => {
+        const rankClass = (s.rank || '').startsWith('A') ? 'rank-a' : (s.rank || '').startsWith('B') ? 'rank-b' : (s.rank || '').startsWith('C') ? 'rank-c' : (s.rank || '').startsWith('D') ? 'rank-d' : 'rank-f';
+        return `<tr>
+          <td><strong>${i + 1}</strong></td>
+          <td><strong>${esc(s.name)}</strong><br><span style="color:#666;font-size:0.75rem;">${esc(s.email)}</span></td>
+          <td style="color:#16a34a;font-weight:600;">${s.filesApproved}</td>
+          <td style="color:#dc2626;">${s.filesRejected}</td>
+          <td style="color:#0891b2;">${s.tasksCompleted}</td>
+          <td><strong>${s.score}/100</strong></td>
+          <td>${s.rank ? `<span class="rank-badge ${rankClass}">${s.rank}</span>` : '—'}</td>
+          <td style="font-style:italic;color:#555;">${esc(s.remarks) || '—'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <div class="footer">Generated by ProjectHub — ${sorted.length} students ranked</div>
+  <\/script>
+</body></html>`);
+      win.document.close();
+    }
+
+    // ── Student Rank Visibility (for students) ──
+    if (!isFaculty) {
+      document.getElementById('tab-ranking').innerHTML = `
+        <div class="glass-card animate-in" style="margin-bottom:24px;">
+          <div class="flex-between" style="margin-bottom:20px;">
+            <h3 style="font-size:1rem;">🏆 My Rankings</h3>
+            <select id="my-rank-project-filter" class="form-control" style="width:auto;min-width:180px;">
+              <option value="">Select Project</option>
+            </select>
+          </div>
+          <div id="my-rank-content">
+            <div class="empty-state"><div class="icon">🏆</div><h3>Select a project to view your rank</h3></div>
+          </div>
+        </div>
+      `;
+      projects.forEach(p => {
+        document.getElementById('my-rank-project-filter').innerHTML += `<option value="${p._id}">${esc(p.name)}</option>`;
+      });
+      document.getElementById('my-rank-project-filter')?.addEventListener('change', async () => {
+        const projectId = document.getElementById('my-rank-project-filter').value;
+        const content = document.getElementById('my-rank-content');
+        if (!projectId) { content.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><h3>Select a project</h3></div>'; return; }
+        try {
+          const res = await ApiClient.get(`/ranking/my-rank/${projectId}`);
+          const rank = res.rank;
+          if (!rank) {
+            content.innerHTML = '<div class="empty-state"><div class="icon">📋</div><h3>No rank assigned yet</h3><p>Your faculty hasn\'t assigned a rank for this project yet.</p></div>';
+            return;
+          }
+          const gradeColors = { 'A+': '#16a34a', 'A': '#16a34a', 'A-': '#65a30d', 'B+': '#2563eb', 'B': '#2563eb', 'B-': '#3b82f6', 'C+': '#d97706', 'C': '#d97706', 'C-': '#f59e0b', 'D': '#dc2626', 'F': '#6b7280' };
+          const gradeColor = gradeColors[rank.rank] || '#7c3aed';
+          content.innerHTML = `
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:200px;text-align:center;padding:40px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-lg);">
+                <div style="font-size:4rem;font-family:'Space Grotesk',sans-serif;font-weight:800;color:${gradeColor};line-height:1;">${rank.rank || '—'}</div>
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:0.1em;">Your Rank</div>
+              </div>
+              <div style="flex:1;min-width:200px;text-align:center;padding:40px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:var(--radius-lg);">
+                <div style="font-size:4rem;font-family:'Space Grotesk',sans-serif;font-weight:800;color:var(--accent-light);line-height:1;">${rank.score}<span style="font-size:1.5rem;color:var(--text-muted);">/100</span></div>
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-top:8px;text-transform:uppercase;letter-spacing:0.1em;">Score</div>
+              </div>
+            </div>
+            <div style="margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+              <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:var(--radius-md);padding:20px;text-align:center;">
+                <div style="font-size:2rem;font-weight:700;color:var(--emerald);">${rank.filesApproved}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">Files Approved</div>
+              </div>
+              <div style="background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:var(--radius-md);padding:20px;text-align:center;">
+                <div style="font-size:2rem;font-weight:700;color:var(--rose);">${rank.filesRejected}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">Files Rejected</div>
+              </div>
+              <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:var(--radius-md);padding:20px;text-align:center;">
+                <div style="font-size:2rem;font-weight:700;color:var(--cyan);">${rank.tasksCompleted}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">Tasks Completed</div>
+              </div>
+            </div>
+            ${rank.remarks ? `
+            <div style="margin-top:24px;padding:20px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);">
+              <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">💬 Faculty Remarks</div>
+              <div style="font-size:1rem;color:var(--text-primary);line-height:1.6;">${esc(rank.remarks)}</div>
+            </div>
+            ` : ''}
+            <div style="margin-top:16px;font-size:0.8rem;color:var(--text-muted);text-align:center;">
+              Ranked by ${esc(rank.assignedBy?.name || 'Faculty')} · ${rank.updatedAt ? new Date(rank.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+            </div>
+          `;
+        } catch (err) {
+          content.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load rank</h3></div>';
+        }
+      });
+    }
+
+    // ── Listeners ──
+    document.getElementById('file-search')?.addEventListener('input', loadFiles);
+    document.getElementById('file-project-filter')?.addEventListener('change', loadFiles);
 
     loadProjects().then(loadFiles);
   </script>
