@@ -180,6 +180,9 @@ const bulkAssignRanks = async (req, res, next) => {
     for (const entry of ranks) {
       if (!entry.studentId) continue;
 
+      // Validate score type and range
+      if (entry.score !== undefined && (typeof entry.score !== 'number' || entry.score < 0 || entry.score > 100)) continue;
+
       const filesApproved = await FileMetadata.countDocuments({
         uploadedBy: entry.studentId, project: projectId, status: 'approved'
       });
