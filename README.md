@@ -268,6 +268,17 @@ const contributionScore = (tasksCompleted * 10) + (approvedUploads * 5);
 
 ---
 
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `N` | Create a new task (on Tasks page) |
+| `P` | Go to Projects page |
+| `?` | Open Help modal |
+| `Esc` | Close any modal or drawer |
+
+---
+
 ## 📄 License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source.
