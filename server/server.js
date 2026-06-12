@@ -26,6 +26,7 @@ const rankingRoutes = require('./routes/rankingRoutes');
 
 const loggerMiddleware = require('./middleware/loggerMiddleware');
 const errorMiddleware = require('./middleware/errorMiddleware');
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const server = http.createServer(app);
@@ -71,15 +72,15 @@ app.use(loggerMiddleware);
 
 // API Versioning
 const apiRouter = express.Router();
-apiRouter.use('/auth', authRoutes);
-apiRouter.use('/projects', projectRoutes);
-apiRouter.use('/tasks', taskRoutes);
-apiRouter.use('/files', fileRoutes);
+apiRouter.use('/auth', authLimiter, authRoutes);
+apiRouter.use('/projects', apiLimiter, projectRoutes);
+apiRouter.use('/tasks', apiLimiter, taskRoutes);
+apiRouter.use('/files', apiLimiter, fileRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/users', userRoutes);
-apiRouter.use('/notifications', notificationRoutes);
-apiRouter.use('/notification-preferences', notificationPreferencesRoutes);
-apiRouter.use('/ranking', rankingRoutes);
+apiRouter.use('/notifications', apiLimiter, notificationRoutes);
+apiRouter.use('/notification-preferences', apiLimiter, notificationPreferencesRoutes);
+apiRouter.use('/ranking', apiLimiter, rankingRoutes);
 
 app.use('/api/v1', apiRouter);
 

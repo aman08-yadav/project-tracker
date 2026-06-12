@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const { uploadFile, getProjectFiles, getFiles, deleteFile, downloadFile, reviewFile, getPendingFiles } = require('../controllers/fileController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const { uploadLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ const upload = multer({
 
 router.use(authMiddleware);
 
-router.post('/upload', upload.single('file'), uploadFile);
+router.post('/upload', uploadLimiter, upload.single('file'), uploadFile);
 router.get('/', getFiles);
 router.get('/pending', roleMiddleware('faculty'), getPendingFiles);
 router.get('/project/:id', getProjectFiles);
