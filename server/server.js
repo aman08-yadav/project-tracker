@@ -86,6 +86,9 @@ app.use('/api/v1', apiRouter);
 // Health check endpoint (for Render uptime monitoring)
 app.get('/api/v1/health', async (req, res) => {
   try {
+    if (!mongoose.connection.db || mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
     await mongoose.connection.db.admin().ping();
     res.json({ status: 'ok', uptime: process.uptime() });
   } catch {
