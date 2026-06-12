@@ -875,7 +875,7 @@
     document.getElementById('file-search')?.addEventListener('input', loadFiles);
     document.getElementById('file-project-filter')?.addEventListener('change', loadFiles);
 
-    loadProjects().then(loadFiles).catch(() => {});
+    loadProjects().then(loadFiles).catch(e => console.error('Failed to load:', e));
   </script>
 </body>
 </html>

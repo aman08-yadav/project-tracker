@@ -81,9 +81,17 @@ const assignRank = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'projectId and studentId are required.' });
     }
 
-    // Validate score range
-    if (score !== undefined && (score < 0 || score > 100)) {
-      return res.status(400).json({ success: false, message: 'Score must be between 0 and 100.' });
+    // Verify faculty is member of this project
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'Project not found.' });
+    const isMember = project.members.some(m => m.user.toString() === req.user._id.toString());
+    if (!isMember && req.user.role !== 'faculty') {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    // Validate score type and range
+    if (score !== undefined && (typeof score !== 'number' || score < 0 || score > 100)) {
+      return res.status(400).json({ success: false, message: 'Score must be a number between 0 and 100.' });
     }
 
     // Count files and tasks for this student in this project
