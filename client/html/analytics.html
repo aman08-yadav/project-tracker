@@ -127,7 +127,7 @@
         .map((m, index) => [
           index + 1,
           `"${m.name}"`,
-          m.role,
+          m.role || 'student',
           m.tasks,
           m.uploads,
           m.score

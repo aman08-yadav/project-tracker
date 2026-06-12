@@ -79,9 +79,13 @@ const initSockets = (server) => {
       socket.to(projectId).emit('chat:typing', { userName, userId, isTyping: true });
     });
 
-    // ── Notification broadcast ───────────────────────────────
+    // ── Notification broadcast (project room only, no persistence) ──
     socket.on('notification:send', ({ projectId, type, message, user }) => {
-      io.to(projectId).emit('notification', { type, message, user, timestamp: new Date() });
+      // Only broadcast if user is tracked in this project room
+      const tracked = onlineUsers.get(socket.id);
+      if (tracked && tracked.projectId === projectId) {
+        io.to(projectId).emit('notification', { type, message, user, timestamp: new Date() });
+      }
     });
 
     // ── Disconnect ───────────────────────────────────────────

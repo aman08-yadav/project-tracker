@@ -13,7 +13,7 @@ const activityLogSchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['file_upload', 'file_delete', 'task_created', 'task_updated', 'task_completed', 'member_added', 'project_created', 'project_updated', 'message_sent'],
+    enum: ['file_upload', 'file_delete', 'file_approved', 'file_rejected', 'task_created', 'task_updated', 'task_completed', 'member_added', 'member_removed', 'project_created', 'project_updated', 'message_sent'],
     required: true,
   },
   metadata: {

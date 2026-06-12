@@ -211,6 +211,14 @@ const getMyRank = async (req, res, next) => {
   try {
     const { projectId } = req.params;
 
+    // Verify student is a member of this project
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'Project not found.' });
+    const isMember = project.members.some(m => m.user.toString() === req.user._id.toString());
+    if (!isMember && req.user.role !== 'faculty') {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
     const rank = await StudentRank.findOne({ student: req.user._id, project: projectId })
       .populate('assignedBy', 'name');
 

@@ -22,11 +22,17 @@ const updatePreferences = async (req, res, next) => {
       prefs = new NotificationPreferences({ user: req.user._id });
     }
 
-    if (inApp) {
-      Object.assign(prefs.inApp, inApp);
+    if (inApp && typeof inApp === 'object') {
+      const allowedInApp = ['taskAssigned', 'taskCompleted', 'taskUpdated', 'fileUploaded', 'fileApproved', 'fileRejected', 'memberAdded'];
+      for (const key of Object.keys(inApp)) {
+        if (allowedInApp.includes(key)) prefs.inApp[key] = inApp[key];
+      }
     }
-    if (browserPush) {
-      Object.assign(prefs.browserPush, browserPush);
+    if (browserPush && typeof browserPush === 'object') {
+      const allowedPush = ['enabled', 'taskAssigned', 'taskCompleted', 'fileApproved', 'fileRejected'];
+      for (const key of Object.keys(browserPush)) {
+        if (allowedPush.includes(key)) prefs.browserPush[key] = browserPush[key];
+      }
     }
     await prefs.save();
 

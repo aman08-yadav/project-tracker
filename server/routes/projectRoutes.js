@@ -15,13 +15,14 @@ router.use(authMiddleware);
 // ─── Project CRUD ─────────────────────────────────────────────
 router.get('/', getProjects);
 
+// Get all students — MUST be before /:id route
+router.get('/students', roleMiddleware('faculty'), getStudents);
+
 // Only faculty can CREATE projects
 router.post('/', roleMiddleware('faculty'), [
   body('name').trim().isLength({ min: 2 }).withMessage('Project name must be at least 2 characters.'),
   body('description').optional().isLength({ max: 500 }).withMessage('Description too long.'),
 ], createProject);
-
-router.get('/students', roleMiddleware('faculty'), getStudents);
 
 router.get('/:id', getProject);
 
