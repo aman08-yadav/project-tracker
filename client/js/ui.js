@@ -348,9 +348,9 @@ let lastSoundTime = 0;
 export function playNotificationSound() {
   try {
     // Debounce: don't play more than once every 2 seconds
-    const now = Date.now();
-    if (now - lastSoundTime < 2000) return;
-    lastSoundTime = now;
+    const nowDebounce = Date.now();
+    if (nowDebounce - lastSoundTime < 2000) return;
+    lastSoundTime = nowDebounce;
     
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     

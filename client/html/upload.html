@@ -669,7 +669,7 @@
           <tbody>
             ${rankingStudents.map((s, i) => `
               <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background='transparent'">
-                <td style="padding:12px 8px;">
+                <td data-label="Student" style="padding:12px 8px;">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:32px;height:32px;border-radius:50%;background:var(--gradient-brand);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.7rem;">${(s.name || 'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}</div>
                     <div>
@@ -678,21 +678,21 @@
                     </div>
                   </div>
                 </td>
-                <td style="text-align:center;padding:12px 8px;color:var(--emerald);font-weight:600;">${s.filesApproved}</td>
-                <td style="text-align:center;padding:12px 8px;color:var(--rose);">${s.filesRejected}</td>
-                <td style="text-align:center;padding:12px 8px;color:var(--cyan);">${s.tasksCompleted}</td>
-                <td style="text-align:center;padding:12px 8px;">
+                <td data-label="Files Approved" style="text-align:center;padding:12px 8px;color:var(--emerald);font-weight:600;">${s.filesApproved}</td>
+                <td data-label="Rejected" style="text-align:center;padding:12px 8px;color:var(--rose);">${s.filesRejected}</td>
+                <td data-label="Tasks Done" style="text-align:center;padding:12px 8px;color:var(--cyan);">${s.tasksCompleted}</td>
+                <td data-label="Score" style="text-align:center;padding:12px 8px;">
                   <input type="number" min="0" max="100" value="${s.score}" class="form-control rank-score" data-idx="${i}" style="width:70px;text-align:center;padding:6px;font-size:0.85rem;">
                 </td>
-                <td style="text-align:center;padding:12px 8px;">
+                <td data-label="Rank" style="text-align:center;padding:12px 8px;">
                   <select class="form-control rank-grade" data-idx="${i}" style="width:80px;padding:6px;font-size:0.85rem;">
                     ${grades.map(g => `<option value="${g}" ${s.rank === g ? 'selected' : ''}>${g || '—'}</option>`).join('')}
                   </select>
                 </td>
-                <td style="padding:12px 8px;">
+                <td data-label="Remarks" style="padding:12px 8px;">
                   <input type="text" value="${esc(s.remarks).replace(/"/g, '&quot;')}" class="form-control rank-remarks" data-idx="${i}" placeholder="Add remarks..." style="font-size:0.8rem;padding:6px 10px;min-width:150px;">
                 </td>
-                <td style="text-align:center;padding:12px 8px;">
+                <td data-label="Action" style="text-align:center;padding:12px 8px;">
                   <button class="btn btn-primary btn-sm save-rank-btn" data-idx="${i}" data-project="${projectId}">💾 Save</button>
                 </td>
               </tr>

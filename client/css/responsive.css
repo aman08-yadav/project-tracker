@@ -98,6 +98,246 @@
   .form-row { grid-template-columns: 1fr; }
 }
 
+/* ── Upload Page: Faculty Tabs ────────────────────────── */
+@media (max-width: 992px) {
+  #faculty-tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #faculty-tabs .role-btn {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+}
+
+/* ── Upload Page: File cards and review queue ──────────── */
+@media (max-width: 768px) {
+  .file-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .file-card > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .member-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .member-card > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+}
+
+/* ── Ranking table mobile ──────────────────────────────── */
+@media (max-width: 992px) {
+  #ranking-content table,
+  #ranking-content thead,
+  #ranking-content tbody,
+  #ranking-content th,
+  #ranking-content td,
+  #ranking-content tr {
+    display: block;
+  }
+  #ranking-content thead {
+    display: none;
+  }
+  #ranking-content tr {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  #ranking-content td {
+    text-align: left !important;
+    padding: 4px 0 !important;
+    border: none;
+    position: relative;
+    padding-left: 120px !important;
+    min-height: 32px;
+  }
+  #ranking-content td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  /* Add data-label attributes via CSS counters isn't possible,
+     so we use a different approach: stack the student info */
+  #ranking-content td:first-child {
+    padding-left: 0 !important;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  #ranking-content td:first-child::before {
+    display: none;
+  }
+  /* Show inputs full width */
+  #ranking-content td .form-control {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  #save-all-ranks-btn {
+    width: 100%;
+  }
+}
+
+/* ── Student rank visibility mobile ────────────────────── */
+@media (max-width: 600px) {
+  #tab-ranking .glass-card > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* ── Tasks page: filter bar mobile ─────────────────────── */
+@media (max-width: 992px) {
+  .filter-bar {
+    gap: 8px;
+    padding: 12px;
+  }
+  .filter-bar .form-group {
+    width: 100%;
+  }
+  .filter-bar select {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .filter-bar .search-input-wrap {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
+/* ── Kanban board mobile improvements ──────────────────── */
+@media (max-width: 600px) {
+  .kanban-board {
+    gap: 12px;
+  }
+  .kanban-col {
+    padding: 10px;
+  }
+  .kanban-card {
+    padding: 12px;
+  }
+  .task-title {
+    font-size: 0.85rem;
+  }
+  .task-desc {
+    font-size: 0.75rem;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ── Leaderboard mobile ────────────────────────────────── */
+@media (max-width: 600px) {
+  .leaderboard-podium {
+    gap: 4px;
+    margin-top: 16px;
+    margin-bottom: 20px;
+  }
+  .podium-item {
+    width: 80px;
+  }
+  .podium-name {
+    font-size: 0.75rem;
+  }
+  .podium-score {
+    font-size: 0.65rem;
+  }
+  .podium-base {
+    height: 50px !important;
+    font-size: 1rem;
+  }
+  .podium-crown {
+    font-size: 1.2rem;
+    top: -14px;
+  }
+  .leaderboard-row {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .leaderboard-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+  .leaderboard-score {
+    font-size: 1.1rem;
+  }
+  .leaderboard-stats {
+    font-size: 0.7rem;
+    gap: 8px;
+  }
+}
+
+/* ── Toast container mobile ────────────────────────────── */
+@media (max-width: 480px) {
+  #toast-container {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+  .toast {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* ── Notification drawer mobile ────────────────────────── */
+@media (max-width: 480px) {
+  .notif-drawer {
+    width: 100%;
+    right: -100%;
+  }
+}
+
+
+
+/* ── Upload zone mobile ────────────────────────────────── */
+@media (max-width: 480px) {
+  .upload-zone {
+    padding: 30px 20px;
+  }
+  .upload-zone .upload-icon {
+    font-size: 2.5rem;
+  }
+  .upload-zone h3 {
+    font-size: 1rem;
+  }
+}
+
+/* ── Page header mobile ────────────────────────────────── */
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 1.4rem;
+  }
+  .page-header p {
+    font-size: 0.8rem;
+  }
+}
+
 /* ── Print ─────────────────────────────────────────────── */
 @media print {
   .sidebar, .topbar, .hamburger, #toast-container { display: none !important; }
