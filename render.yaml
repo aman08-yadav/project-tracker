@@ -17,7 +17,7 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: CLIENT_URL
-        sync: false
+        value: https://project-tracker.onrender.com
       - key: UPLOAD_DIR
         value: uploads
       - key: SMTP_HOST

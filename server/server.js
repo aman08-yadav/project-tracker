@@ -85,16 +85,20 @@ apiRouter.use('/ranking', apiLimiter, rankingRoutes);
 app.use('/api/v1', apiRouter);
 
 // Health check endpoint (for Render uptime monitoring)
+// Returns 200 even when DB is still connecting so Render doesn't kill the dyno during cold start.
 app.get('/api/v1/health', async (req, res) => {
-  try {
-    if (!mongoose.connection.db || mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+  const readyState = mongoose.connection.readyState;
+  // readyState: 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
+  if (readyState === 1) {
+    try {
+      await mongoose.connection.db.admin().ping();
+      return res.json({ status: 'ok', uptime: process.uptime() });
+    } catch {
+      return res.status(503).json({ status: 'error', message: 'Database unreachable' });
     }
-    await mongoose.connection.db.admin().ping();
-    res.json({ status: 'ok', uptime: process.uptime() });
-  } catch {
-    res.status(503).json({ status: 'error', message: 'Database unreachable' });
   }
+  // DB still connecting — return 200 with degraded status so Render keeps the instance alive
+  res.json({ status: 'degraded', db: readyState === 2 ? 'connecting' : 'disconnected', uptime: process.uptime() });
 });
 
 // Route root to index.html
@@ -117,14 +121,17 @@ app.use(errorMiddleware);
 // Connect to MongoDB and start server
 const PORT = process.env.PORT || 5001;
 
+// Start HTTP server immediately so Render's health check responds during cold start
+server.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+});
+
+// Connect to MongoDB in the background (non-blocking)
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    // Connected to MongoDB Atlas
+    console.log('✅ MongoDB connected successfully');
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
+    // Don't exit — let the server keep running; health check will report degraded state
   });
-
-server.listen(PORT, () => {
-  // Server is running
-});
