@@ -134,41 +134,41 @@ Built with a **Vanilla JS + HTML/CSS** frontend and a **Node.js + Express + Mong
 ┌──────────────────────────────────────────────────────────────────┐
 │                          BROWSER                                 │
 │                                                                  │
-│  HTML5 · Vanilla CSS3 (Dark Glassmorphism) · ES6 Modules        │
-│  Native Fetch API · Socket.IO Client · Web Audio API            │
+│  HTML5 · Vanilla CSS3 (Dark Glassmorphism) · ES6 Modules         │
+│  Native Fetch API · Socket.IO Client · Web Audio API             │
 │                                                                  │
-│  Pages: Login · Signup · Dashboard · Tasks · Project ·          │
+│  Pages: Login · Signup · Dashboard · Tasks · Project ·           │
 │         Analytics · Upload · 404                                 │
 └──────────────────┬───────────────────────────┬───────────────────┘
                    │  HTTP / REST (port 5001)   │  WebSocket (ws://)
 ┌──────────────────▼───────────────────────────▼───────────────────┐
 │                       EXPRESS SERVER                             │
 │                                                                  │
-│   /api/v1/auth           →  Register · Login · Me               │
-│   /api/v1/projects       →  CRUD projects · member management   │
-│   /api/v1/tasks          →  CRUD tasks · status updates         │
-│   /api/v1/files          →  Upload · list · review · delete     │
-│   /api/v1/rankings       →  Get rank · assign rank (faculty)    │
-│   /api/v1/analytics      →  Leaderboard · contribution stats    │
-│   /api/v1/notifications  →  List · mark read · preferences      │
-│   /api/v1/users          →  User profile · listing              │
-│   /api/v1/health         →  Health check (pings MongoDB)        │
+│   /api/v1/auth           →  Register · Login · Me                │
+│   /api/v1/projects       →  CRUD projects · member management    │
+│   /api/v1/tasks          →  CRUD tasks · status updates          │
+│   /api/v1/files          →  Upload · list · review · delete      │
+│   /api/v1/rankings       →  Get rank · assign rank (faculty)     │
+│   /api/v1/analytics      →  Leaderboard · contribution stats     │
+│   /api/v1/notifications  →  List · mark read · preferences       │
+│   /api/v1/users          →  User profile · listing               │
+│   /api/v1/health         →  Health check (pings MongoDB)         │
 │                                                                  │
-│   Middleware: requireAuth (JWT) · requireRole (RBAC)            │
-│               Helmet · CORS · Rate Limiter · Morgan · Multer    │
+│   Middleware: requireAuth (JWT) · requireRole (RBAC)             │
+│               Helmet · CORS · Rate Limiter · Morgan · Multer     │
 │                                                                  │
-│   Sockets: chat rooms · typing events · notification push       │
+│   Sockets: chat rooms · typing events · notification push        │
 └──────────────────────────────┬───────────────────────────────────┘
                                │  Mongoose ODM
 ┌──────────────────────────────▼───────────────────────────────────┐
 │                           MONGODB                                │
 │                                                                  │
-│  Collections: Users · Projects · Tasks · FileMetadata           │
-│               Notifications · NotificationPreferences           │
-│               StudentRank · ActivityLog · ChatMessage           │
+│  Collections: Users · Projects · Tasks · FileMetadata            │
+│               Notifications · NotificationPreferences            │
+│               StudentRank · ActivityLog · ChatMessage            │
 │                                                                  │
-│  🌱 Seeded via seed.js with 2 projects, 10 tasks, 4 users       │
-│  ☁️  Production: MongoDB Atlas via MONGODB_URI env variable     │
+│  Seeded via seed.js with 2 projects, 10 tasks, 4 users           │
+│  Production: MongoDB Atlas via MONGODB_URI env variable          │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
