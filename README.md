@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🚀 Project Tracker</h1>
+  <h1> Project Tracker</h1>
   <p><b>Team Contribution Tracking System</b></p>
   <p><i>A Full-Stack Web Application developed for transparent, real-time collaboration and automated academic evaluation.</i></p>
   
